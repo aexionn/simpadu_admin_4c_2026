@@ -16,8 +16,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => 'jwt',
+        'passwords' => 'users',
     ],
 
     /*
@@ -42,11 +42,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'jwt' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | User Providers
+    | User ProPviders
     |--------------------------------------------------------------------------
     |
     | All authentication guards have a user provider, which defines how the
