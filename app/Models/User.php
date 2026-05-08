@@ -34,4 +34,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Role::class, 'user_roles', 'id_user', 'id_role')->withTimestamps();
     }
+
+    public function hasRole($roleName): bool
+    {
+        return $this->roles()->where('role_name', $roleName)->exists();
+    }
 }

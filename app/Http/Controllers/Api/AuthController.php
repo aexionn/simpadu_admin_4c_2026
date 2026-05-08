@@ -20,29 +20,6 @@ class AuthController extends Controller
         $this->jwtService = $jwtService;
     }
 
-    public function register(RegisterRequest $request): JsonResponse
-    {
-        $payload = $request->validated();
-
-        if (User::firstWhere("email", $payload["email"])) {
-            return response()->json([
-                "errors" => [
-                    "email" => [
-                        "email already registered"
-                    ]
-                ]
-            ], 400);
-        }
-
-        $user = User::create([
-            "name" => $payload["name"],
-            "email" => $payload["email"],
-            "password" => Hash::make($payload["password"]),
-        ]);
-
-        return $this->tokenResponse($user, 201);
-    }
-
     public function login(LoginRequest $request): JsonResponse
     {
         $payload = $request->validated();
@@ -60,11 +37,24 @@ class AuthController extends Controller
        return $this->tokenResponse($user);
     }
 
+    public function logout(Request $request): JsonResponse
+    {
+        $token = $request->bearerToken();
+
+        if($token){
+            $this->jwtService->revokeToken($token);
+        }
+
+        return response()->json([
+            "message" => "Successfully logged out"
+        ]);
+    }
+
     public function refresh(Request $request): JsonResponse
     {
-        $refrreshToken = $request->input('refresh_token') ?? $request->bearerToken();
+        $refreshToken = $request->input('refresh_token') ?? $request->bearerToken();
 
-        if(!$refrreshToken) {
+        if(!$refreshToken) {
             return response()->json([
                 "errors" => [
                     "message" => [
@@ -74,7 +64,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $payload = $this->jwtService->verifyToken($refrreshToken);
+        $payload = $this->jwtService->verifyToken($refreshToken);
 
         if (!$payload || ($payload->type ?? null) !== 'refresh') {
             return response()->json([

@@ -24,7 +24,7 @@ return new class extends Migration
 
         Schema::create('roles', function (Blueprint $table) {
             $table->id('id_role');
-            $table->string('nama_role');
+            $table->string('role_name');
             $table->timestamps();
         });
 
@@ -38,10 +38,10 @@ return new class extends Migration
             $table->foreign('id_role')->references('id_role')->on('roles')->onDelete('cascade');
         });
 
-        Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
+        Schema::create('refresh_tokens', function (Blueprint $table) {
+            $table->string('id_user')->references('id_user')->on('users')->onDelete('cascade');
             $table->string('token');
-            $table->timestamp('created_at')->nullable();
+            $table->timestamp('expires_at')->useCurrent();
         });
 
         Schema::create('sessions', function (Blueprint $table) {

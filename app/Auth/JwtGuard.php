@@ -41,6 +41,10 @@ class JwtGuard implements Guard
             return null;
         }
 
+        if ($this->jwtService->isRevoked($token)){
+            return null;
+        }
+
         $this->user = $this->provider->retrieveById($payload->sub);
 
         return $this->user;

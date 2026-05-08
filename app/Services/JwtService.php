@@ -31,11 +31,13 @@ class JwtService
 
         $payload = [
             'iss' => $this->issuer,
-            'sub' => $user->id_user,
+            'sub' => $user->getKey(),
             'iat' => $now,
             'exp' => $now + $this->ttl,
             'type' => 'access',
             'email' => $user->email,
+            'role' => $user->roles->pluck('role_name')->toArray(),
+            'jti' => bin2hex(random_bytes(16)),
         ];
 
         return JWT::encode($payload, $this->secret, $this->algo);
@@ -47,7 +49,7 @@ class JwtService
 
         $payload = [
             'iss' => $this->issuer,
-            'sub' => $user->id_user,
+            'sub' => $user->getKey(),
             'iat' => $now,
             'exp' => $now + $this->refresh_ttl,
             'type' => 'refresh',
@@ -69,25 +71,60 @@ class JwtService
         }
     }
 
-    public function refreshAccessToken(string $refreshToken): string
-    {
-        $payload = $this->verifyToken($refreshToken);
+    // public function refreshAccessToken(string $refreshToken): string
+    // {
+    //     $payload = $this->verifyToken($refreshToken);
 
-        if ($payload->type !== 'refresh') {
-            throw new \Exception('Invalid token type');
-        } 
+    //     if ($payload->type !== 'refresh') {
+    //         throw new \Exception('Invalid token type');
+    //     } 
 
-        $user = User::find($payload->sub);
+    //     $user = User::find($payload->sub);
 
-        if (!$user) {
-            throw new \Exception('User not found');
-        }
+    //     if (!$user) {
+    //         throw new \Exception('User not found');
+    //     }
 
-        return $this->issueAccessToken($user);
-    }
+    //     return $this->issueAccessToken($user);
+    // }
 
     public function getTtl(): int
     {
         return $this->ttl;
+    }
+
+    public function revokeToken(string $token): void
+    {
+        $payload = $this->verifyToken($token);
+
+        if(!$payload) {
+            return;
+        }
+
+        $remainingTtl = $payload->exp - time();
+
+        if ($remainingTtl > 0) {
+            cache()->put(
+                $this->blacklistKey($payload->jti),
+                true,
+                $remainingTtl
+            );
+        }
+    }
+
+    public function isRevoked(string $token): bool
+    {
+        $payload = $this->verifyToken($token);
+
+        if(!$payload){
+            throw new \Exception('Invalid token');
+        }
+
+        return (bool) cache()->get($this->blacklistKey($payload->jti));
+    }
+
+    private function blacklistKey(string $jti): string
+    {
+        return "jwt_blacklist_{$jti}";
     }
 }
