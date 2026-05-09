@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
-use App\Http\Requests\RegisterRequest;
 use App\Models\User;
+use App\Models\RefreshToken;
 use App\Services\JwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -100,9 +100,17 @@ class AuthController extends Controller
 
     private function tokenResponse(User $user, int $status = 200): JsonResponse
     {
+        $refreshToken = $this->jwtService->issueRefreshToken($user);
+        
+        $refresh = RefreshToken::create([
+            "user_id" => $user->id_user,
+            "token" => $refreshToken,
+            "expires_at" => now()->addMinutes($this->jwtService->getRefreshTtl()),
+        ]);
+        
         return response()->json([
             'access_token'  => $this->jwtService->issueAccessToken($user),
-            'refresh_token' => $this->jwtService->issueRefreshToken($user),
+            'refresh_token' => $refreshToken,
             'token_type'    => 'Bearer',
             'expires_in'    => $this->jwtService->getTtl(),
             'user'          => $user,

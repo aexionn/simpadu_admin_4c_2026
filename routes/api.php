@@ -13,10 +13,10 @@ Route::middleware("auth:jwt")->group(function () {
     Route::post("/auth/logout", [AuthController::class, "logout"]);
     Route::get("/auth/me", [AuthController::class, "me"]);
 
-    Route::middleware('super_admin')->group(function (){
-        Route::post("/register", [UserManagementController::class, "register"]);
+    Route::middleware('super_admin')->prefix('admin')->group(function (){
+        Route::post("/users", [UserManagementController::class, "register"]);
         Route::get("/users", [UserManagementController::class, "index"]);
-        Route::get("/users/{id}/toggle", [UserManagementController::class, "toggleActiveStatus"]);
+        Route::patch("/users/{id}/toggle", [UserManagementController::class, "toggleActiveStatus"]);
         // Route::put("/users/{id}", [UserManagementController::class, "update"]);
         Route::delete("/users/{id}", [UserManagementController::class, "destroy"]);
     });

@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
-use App\Requests\RegisterRequest;
+use App\Http\Requests\RegisterRequest;
 
 class UserManagementController extends Controller
 {
@@ -26,6 +26,7 @@ class UserManagementController extends Controller
             ], 400);
         }
 
+
         $user = User::create([
             "name" => $payload["name"],
             "email" => $payload["email"],
@@ -33,8 +34,8 @@ class UserManagementController extends Controller
             'is_active' => $payload["is_active"] ?? 'Y',
         ]);
 
-        $role = Role::firstWhere('role_name', $payload['role']);
-        $user->roles()->attach($role->getKey());
+        $role = Role::where('nama_role', $payload["role"])->first();
+        $user->roles()->attach($role->id_role);
 
         return response()->json([
             "message" => "User registered successfully",
@@ -62,15 +63,29 @@ class UserManagementController extends Controller
                     'roles' => $user->roles->pluck('role_name'),
                 ];
             });
+        
+        return response()->json(['users' => $users]);
     }
 
-    public function toogleActiveStatus(int $id_user):JsonResponse
+    public function toggleActiveStatus(int $id_user):JsonResponse
     {
         $user = User::findOrFail($id_user);
 
+        if ($user->id_user === auth('jwt')->user()->getKey()){
+            return response()->json([
+                'message' => 'You cannot change your own active status'
+            ], 403);
+        }
+
         $user->update([
-            'is_active'=>$user->is_active === 'Y' ? 'T' : 'Y',
+            'is_active'=>$user->is_active == 'Y' ? 'T' : 'Y',
         ]);
+
+        // if ($user->is_active == 'Y') {
+        //     $user->update(['is_active' => 'T']);
+        // } else {
+        //     $user->update(['is_active' => 'Y']);
+        // }
 
         return response()->json([
             'message' => 'User status updated',

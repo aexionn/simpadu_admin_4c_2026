@@ -93,6 +93,11 @@ class JwtService
         return $this->ttl;
     }
 
+    public function getRefreshTtl(): int
+    {
+        return $this->refresh_ttl;
+    }
+
     public function revokeToken(string $token): void
     {
         $payload = $this->verifyToken($token);

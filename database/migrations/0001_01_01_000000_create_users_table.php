@@ -17,14 +17,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->boolean('is_active')->default(true);
-            $table->rememberToken();
+            $table->enum('is_active', ['Y', 'T'])->default('Y');
             $table->timestamps();
         });
 
         Schema::create('roles', function (Blueprint $table) {
             $table->id('id_role');
-            $table->string('role_name');
+            $table->string('nama_role');
             $table->timestamps();
         });
 
