@@ -26,7 +26,6 @@ class UserManagementController extends Controller
             ], 400);
         }
 
-
         $user = User::create([
             "name" => $payload["name"],
             "email" => $payload["email"],
@@ -80,12 +79,6 @@ class UserManagementController extends Controller
         $user->update([
             'is_active'=>$user->is_active == 'Y' ? 'T' : 'Y',
         ]);
-
-        // if ($user->is_active == 'Y') {
-        //     $user->update(['is_active' => 'T']);
-        // } else {
-        //     $user->update(['is_active' => 'Y']);
-        // }
 
         return response()->json([
             'message' => 'User status updated',

@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id('id_user');
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('is_active', ['Y', 'T'])->default('Y');
             $table->timestamps();
@@ -23,12 +22,12 @@ return new class extends Migration
 
         Schema::create('roles', function (Blueprint $table) {
             $table->id('id_role');
-            $table->string('nama_role');
+            $table->string('role_name', 40)->nullable();
             $table->timestamps();
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->id();
+            $table->id('id_user_role');
             $table->unsignedBigInteger('id_user');
             $table->unsignedBigInteger('id_role');
             $table->timestamps();
@@ -38,6 +37,7 @@ return new class extends Migration
         });
 
         Schema::create('refresh_tokens', function (Blueprint $table) {
+            $table->id('id_token');
             $table->string('id_user')->references('id_user')->on('users')->onDelete('cascade');
             $table->string('token');
             $table->timestamp('expires_at')->useCurrent();

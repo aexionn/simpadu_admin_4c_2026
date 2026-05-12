@@ -6,6 +6,7 @@ use Firebase\JWT\Key;
 use Firebase\JWT\ExpiredException;
 use Firebase\JWT\SignatureInvalidException;
 use App\Models\User;
+use App\Models\RefreshToken;
 use stdClass;
 
 class JwtService
@@ -56,6 +57,13 @@ class JwtService
         ];
 
         return JWT::encode($payload, $this->secret, $this->algo);
+
+        RefreshToken::where('id_user', $user->getKey())->delete();
+        RefreshToken::create([
+            "id_user" => $user->getKey(),
+            "token" => $refreshToken,
+            "expires_at" => now()->addMinutes($this->refresh_ttl),
+        ]);
     }
 
     public function verifyToken(string $token): stdClass
@@ -98,7 +106,7 @@ class JwtService
         return $this->refresh_ttl;
     }
 
-    public function revokeToken(string $token): void
+    public function revokeAccessToken(string $token): void
     {
         $payload = $this->verifyToken($token);
 

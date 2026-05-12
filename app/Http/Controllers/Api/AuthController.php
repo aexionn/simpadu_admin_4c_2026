@@ -42,7 +42,8 @@ class AuthController extends Controller
         $token = $request->bearerToken();
 
         if($token){
-            $this->jwtService->revokeToken($token);
+            $this->jwtService->revokeAccessToken($token);
+            RefreshToken::where('id_user', $request->user()->getKey())->delete();
         }
 
         return response()->json([
@@ -76,6 +77,21 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $stored = RefreshToken::where('id_user', $payload->sub)
+            ->where('token', hash('sha256', $refreshToken))
+            ->where('expires_at', '>', now())
+            ->first();
+            
+        if (!$stored) {
+            return response()->json([
+                "errors" => [
+                    "message" => [
+                        "refresh token not found or expired"
+                    ]
+                ]
+            ], 401);
+        }
+
         $user = User::find($payload->sub);
 
         if (!$user){
@@ -89,13 +105,6 @@ class AuthController extends Controller
         }
 
         return $this->tokenResponse($user);
-    }
-
-    public function me(Request $request): JsonResponse
-    {
-        return response()->json([
-            'user' => $request->user(),
-        ]);
     }
 
     private function tokenResponse(User $user, int $status = 200): JsonResponse
