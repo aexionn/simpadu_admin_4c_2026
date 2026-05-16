@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('mata_kuliah', function (Blueprint $table) {
             $table->integer('ID_MK')->primary();
-            $table->char('KODE_MK', 6)->unique();   // AK_KODE_MK — referenced by many FK constraints
             $table->string('NAMA_MK', 40)->nullable();
             $table->smallInteger('SEMESTER')->nullable();
             $table->smallInteger('SKS')->nullable();

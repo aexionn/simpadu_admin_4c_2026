@@ -9,16 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('mk_krs', function (Blueprint $table) {
-            $table->char('KODE_MK', 6);
+            $table->integer('ID_MK');
             $table->integer('ID_KRS');
             $table->timestamps();
 
-            // Composite primary key
-            $table->primary(['KODE_MK', 'ID_KRS']);
-
             // FK_MK_KRS2: mk_krs references mata_kuliah
-            $table->foreign('KODE_MK')
-                  ->references('KODE_MK')
+            $table->foreign('ID_MK')
+                  ->references('ID_MK')
                   ->on('mata_kuliah')
                   ->cascadeOnDelete()
                   ->cascadeOnUpdate();

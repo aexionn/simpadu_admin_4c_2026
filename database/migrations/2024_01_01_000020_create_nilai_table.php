@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('nilai', function (Blueprint $table) {
             $table->integer('ID_NILAI')->primary();
             $table->integer('ID_KHS');
-            $table->char('KODE_MK', 6);
+            $table->integer('ID_MK');
             $table->float('TOTAL_NILAI', 12, 2)->nullable();
             $table->enum('NILAI_HURUF', ['A', 'AB', 'B', 'BC', 'C', 'D', 'E'])->nullable();
             $table->char('NIM', 11)->nullable();
@@ -25,8 +25,8 @@ return new class extends Migration
                   ->cascadeOnUpdate();
 
             // FK_MEMILIKI2: nilai belongs to mata_kuliah
-            $table->foreign('KODE_MK')
-                  ->references('KODE_MK')
+            $table->foreign('ID_MK')
+                  ->references('ID_MK')
                   ->on('mata_kuliah')
                   ->cascadeOnDelete()
                   ->cascadeOnUpdate();

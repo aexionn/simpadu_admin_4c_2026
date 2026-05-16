@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('jadwal_matakuliah', function (Blueprint $table) {
             $table->integer('ID_JADWAL')->primary();
-            $table->char('KODE_MK', 6);
+            $table->integer('ID_MK');
             $table->string('NAMA_HARI', 10)->nullable();
             $table->time('WAKTU_MULAI')->nullable();
             $table->time('WAKTU_AKHIR')->nullable();
@@ -18,8 +18,8 @@ return new class extends Migration
             $table->timestamps();
 
             // FK_JADWAL_MK: jadwal belongs to mata_kuliah
-            $table->foreign('KODE_MK')
-                  ->references('KODE_MK')
+            $table->foreign('ID_MK')
+                  ->references('ID_MK')
                   ->on('mata_kuliah')
                   ->cascadeOnDelete()
                   ->cascadeOnUpdate();

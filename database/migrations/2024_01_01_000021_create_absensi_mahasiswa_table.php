@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('absensi_mahasiswa', function (Blueprint $table) {
-            $table->bigInteger('ID_ABSENSI')->primary();
+            $table->integer('ID_ABSENSI')->primary();
             $table->integer('ID_PERTEMUAN');
             $table->char('NIM', 11)->nullable();
             $table->timestamp('WAKTU_PRESENSI')->useCurrent()->useCurrentOnUpdate();

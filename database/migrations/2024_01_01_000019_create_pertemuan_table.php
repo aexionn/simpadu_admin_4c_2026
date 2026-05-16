@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('pertemuan', function (Blueprint $table) {
             $table->integer('ID_PERTEMUAN')->primary();
             $table->integer('ID_KELAS');
-            $table->char('KODE_MK', 6);
+            $table->integer('ID_MK');
             $table->char('NIP', 20)->nullable();   // lecturer NIP — no FK defined in source schema
             $table->smallInteger('PERTEMUAN_KE')->nullable();
             $table->string('TEMA', 20)->nullable();
@@ -26,11 +26,13 @@ return new class extends Migration
                   ->cascadeOnUpdate();
 
             // FK_MENGAJAR_DI2: pertemuan belongs to mata_kuliah
-            $table->foreign('KODE_MK')
-                  ->references('KODE_MK')
+            $table->foreign('ID_MK')
+                  ->references('ID_MK')
                   ->on('mata_kuliah')
                   ->cascadeOnDelete()
                   ->cascadeOnUpdate();
+            
+            $table->index('NIP'); 
         });
     }
 

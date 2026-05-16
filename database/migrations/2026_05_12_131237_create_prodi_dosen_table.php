@@ -12,16 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('prodi_dosen', function (Blueprint $table) {
-            $table->id('id_prodi_dosen');
-            $table->integer('ID_PRODI');
+            $table->integer('KODE_PRODI_DOSEN');
+            $table->integer('ID_PRODI')->nullable();
             $table->char('NIP', 20)->nullable();
             $table->timestamps();
-
-            $table->foreign('ID_PRODI')
-                  ->references('ID_PRODI')
-                  ->on('prodi')
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
+            
+            $table->index('NIP');
         });
     }
 

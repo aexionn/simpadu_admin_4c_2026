@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('khs', function (Blueprint $table) {
             $table->integer('ID_KHS')->primary();
+            $table->integer('ID_NILAI')->nullable();
             $table->smallInteger('SEMESTER')->nullable();
             $table->char('NIM', 11)->nullable();
             $table->float('IPS', 12, 2)->nullable();

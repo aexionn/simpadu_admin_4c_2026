@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id('id_user');
+            $table->integer('id_user')->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
@@ -21,15 +21,14 @@ return new class extends Migration
         });
 
         Schema::create('roles', function (Blueprint $table) {
-            $table->id('id_role');
+            $table->integer('id_role')->primary();
             $table->string('role_name', 40)->nullable();
             $table->timestamps();
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->id('id_user_role');
-            $table->unsignedBigInteger('id_user');
-            $table->unsignedBigInteger('id_role');
+            $table->integer('id_user');
+            $table->integer('id_role');
             $table->timestamps();
 
             $table->foreign('id_user')->references('id_user')->on('users')->onDelete('cascade');
@@ -37,7 +36,7 @@ return new class extends Migration
         });
 
         Schema::create('refresh_tokens', function (Blueprint $table) {
-            $table->id('id_token');
+            $table->integer('id_token')->primary();
             $table->string('id_user')->references('id_user')->on('users')->onDelete('cascade');
             $table->string('token');
             $table->timestamp('expires_at')->useCurrent();

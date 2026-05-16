@@ -10,20 +10,13 @@ return new class extends Migration
     {
         Schema::create('kelas', function (Blueprint $table) {
             $table->integer('ID_KELAS')->primary();
-            $table->integer('ID_PRODI');
+            $table->integer('ID_PRODI')->nullable();
             $table->integer('ID_PROGRAM');
             $table->integer('ID_TAHUN_AKADEMIK');
             $table->smallInteger('SEMESTER')->nullable();
             $table->char('ALIAS', 1)->nullable();
             $table->string('KELAS_NAMA', 60)->nullable();
             $table->timestamps();
-
-            // FK_BERPRODI: kelas belongs to prodi
-            $table->foreign('ID_PRODI')
-                  ->references('ID_PRODI')
-                  ->on('prodi')
-                  ->cascadeOnDelete()
-                  ->cascadeOnUpdate();
 
             // FK_BERPROGRAM: kelas belongs to program_kelas
             $table->foreign('ID_PROGRAM')

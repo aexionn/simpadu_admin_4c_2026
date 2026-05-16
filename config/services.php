@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'prodi_api' => [
+        'base_url'  => env('PRODI_API_BASE_URL', 'https://adm.agussbn.my.id/api'),
+        'cache_ttl' => env('PRODI_API_CACHE_TTL', 3600),
+    ],
 ];
