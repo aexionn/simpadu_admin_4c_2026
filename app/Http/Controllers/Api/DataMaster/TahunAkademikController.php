@@ -6,14 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\TahunAkademik;
 use App\Http\Requests\TahunAkademikUpdateRequest;
 use App\Http\Resources\TahunAkademikResource;
-use App\Services\ActivationToggleInterface;
+use App\Services\ActivateToggle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TahunAkademikController extends Controller
 {
-    public function __construct(protected ActivationToggleInterface $toggle) {}
+    public function __construct(protected ActivateToggle $toggle) {}
 
     public function index(): JsonResponse
     {

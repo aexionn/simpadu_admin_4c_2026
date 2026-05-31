@@ -5,7 +5,7 @@ namespace App\Services;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
-class ActivationToggleService
+class ActivateToggle
 {
     /**
      * Atomically activate $model and deactivate all siblings on the same column.

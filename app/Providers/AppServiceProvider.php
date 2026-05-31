@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Extensions\ApiResponseEnvelopeExtension;
 use Illuminate\Support\ServiceProvider;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── Global API response envelope ──────────────────────────────────────
+        Scramble::registerExtension(ApiResponseEnvelopeExtension::class);
+
+        // ── JWT bearer security scheme ────────────────────────────────────────
         Scramble::configure()
             ->withDocumentTransformers(function (OpenApi $openApi) {
                 $openApi->secure(
