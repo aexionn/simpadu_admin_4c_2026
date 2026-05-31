@@ -1,9 +1,9 @@
 <?php
-// app/Http/Controllers/Api/DataMaster/MataKuliahController.php
 
 namespace App\Http\Controllers\Api\DataMaster;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\MataKuliahResource;
 use App\Models\MataKuliah;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,9 +12,8 @@ class MataKuliahController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json([
-            'data' => MataKuliah::all(),
-        ]);
+        $data = MataKuliah::all();
+        return $this->successCollection(MataKuliahResource::collection($data), 'Data mata kuliah berhasil diambil');
     }
 
     public function store(Request $request): JsonResponse
@@ -28,17 +27,12 @@ class MataKuliahController extends Controller
 
         $mk = MataKuliah::create($validated);
 
-        return response()->json([
-            'message' => 'Mata kuliah created successfully.',
-            'data'    => $mk,
-        ], 201);
+        return $this->successResponse(new MataKuliahResource($mk), 'Mata kuliah berhasil ditambahkan', 201);
     }
 
     public function show(int $id): JsonResponse
     {
-        $mk = MataKuliah::findOrFail($id);
-
-        return response()->json(['data' => $mk]);
+       return $this->successResponse(new MataKuliahResource(MataKuliah::findOrFail($id)), 'Detail mata kuliah berhasil diambil');
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -54,19 +48,13 @@ class MataKuliahController extends Controller
 
         $mk->update($validated);
 
-        return response()->json([
-            'message' => 'Mata kuliah updated successfully.',
-            'data'    => $mk,
-        ]);
+        return $this->successResponse(new MataKuliahResource($mk), 'Mata kuliah berhasil diperbarui');
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $mk = MataKuliah::findOrFail($id);
-        $mk->delete();
+        MataKuliah::findOrFail($id)->delete();
 
-        return response()->json([
-            'message' => 'Mata kuliah deleted successfully.',
-        ]);
+        return $this->successMessage('Mata kuliah berhasil dihapus');
     }
 }

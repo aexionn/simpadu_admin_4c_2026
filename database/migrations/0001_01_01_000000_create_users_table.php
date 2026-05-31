@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->integer('id_user')->primary();
+            $table->increments('id_user')->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
@@ -21,14 +21,14 @@ return new class extends Migration
         });
 
         Schema::create('roles', function (Blueprint $table) {
-            $table->integer('id_role')->primary();
-            $table->string('role_name', 40)->nullable();
+            $table->increments('id_role')->primary();
+            $table->string('role_name', 40);
             $table->timestamps();
         });
 
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->integer('id_user');
-            $table->integer('id_role');
+            $table->integer('id_user')->unsigned();
+            $table->integer('id_role')->unsigned();
             $table->timestamps();
 
             $table->foreign('id_user')->references('id_user')->on('users')->onDelete('cascade');
@@ -36,15 +36,19 @@ return new class extends Migration
         });
 
         Schema::create('refresh_tokens', function (Blueprint $table) {
-            $table->integer('id_token')->primary();
-            $table->string('id_user')->references('id_user')->on('users')->onDelete('cascade');
-            $table->string('token');
+            $table->increments('id_token')->primary();
+            $table->integer('id_user')->unsigned()->references('id_user')->on('users')->onDelete('cascade');
+            $table->string('jti', 32);
+            $table->string('token_hash');
             $table->timestamp('expires_at')->useCurrent();
+            $table->timestamp('revoked_at')->nullable();
+
+            $table->index(['id_user', 'token_hash']);
         });
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->integer('user_id')->unsigned()->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

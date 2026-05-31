@@ -23,11 +23,21 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'     => 'required|string|email|max:255|unique:users',
+            'email'     => 'required|string|email|max:255|unique:users,email',
             'name'      => 'required|string|max:255',
             'password'  => 'required|string|min:8',
-            'is_active' => 'sometimes|in:Y,N',
+            'is_active' => 'sometimes|in:Y,T',
             'role'      => 'required'
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'email'     => 'Email address',
+            'name'      => 'Full name',
+            'is_active' => 'Active status (Y or T)',
+            'role'      => 'Role name (must exist in roles table)',
         ];
     }
 }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\RoleResource;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -12,11 +14,12 @@ class RoleController extends Controller
 {
     public function index(): JsonResponse
     {
-        $roles = Role::select('id_roles', 'roles_name')->get();
+        $roles = Role::select('id_role', 'role_name')->get();
 
-        return response()->json([
-            "roles" => $roles
-        ]);
+        return $this->successCollection(
+            RoleResource::collection($roles),
+            'Roles retrieved successfully'
+        );
     }
 
     public function store (Request $request): JsonResponse
@@ -27,13 +30,23 @@ class RoleController extends Controller
 
         $role = Role::create($validated);
 
-        return response()->json([
-            "message" => "Role created successfully",
-            "role" => [
-                'id_roles' => $role->getKey(),
-                'role_name' => $role->role_name,
-            ]
-        ], 201);
+        return $this->successResponse(
+            new RoleResource($role),
+            'Role created successfully',
+            201
+        );
+    }
+
+    public function destroy(int $roleId): JsonResponse
+    {
+        $role = Role::findOrFail($roleId);
+        
+        DB::transaction(function () use ($role) {
+            $role->users()->detach();
+            $role->delete();
+        });
+
+        return $this->successMessage('Role deleted successfully');
     }
 
     public function assignToUser(Request $request, int $userId): JsonResponse
@@ -44,13 +57,12 @@ class RoleController extends Controller
 
         $user = User::findOrFail($userId);
         $role = Role::where('role_name', $validated['role'])->first();
-
         $user->roles()->syncWithoutDetaching([$role->id_role]);
 
-        return response()->json([
-            "message" => "Role '{$role->role_name}' assigned to user successfully",
-            'roles' => $user->roles->pluck('role_name'),
-        ]);
+        return $this->successResponse(
+            ['roles' => $user->roles->pluck('role_name')],
+            "Role '{$role->role_name}' assigned to user successfully"
+        );
     }
 
     public function revokeFromUser(Request $request, int $userId): JsonResponse
@@ -61,12 +73,11 @@ class RoleController extends Controller
 
         $user = User::findOrFail($userId);
         $role = Role::where('role_name', $validated['role'])->first();
-
         $user->roles()->detach($role->id_role);
 
-        return response()->json([
-            "message" => "Role '{$role->role_name}' revoked from user successfully",
-            'roles' => $user->roles->pluck('role_name'),
-        ]);
+        return $this->successResponse(
+            ['roles' => $user->roles->pluck('role_name')],
+            "Role '{$role->role_name}' revoked from user successfully"
+        );
     }
 }

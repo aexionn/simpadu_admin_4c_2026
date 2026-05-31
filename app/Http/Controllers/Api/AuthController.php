@@ -5,21 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RefreshTokenRequest;
 use App\Models\User;
 use App\Models\RefreshToken;
+use App\Http\Resources\UserResource;
 use App\Services\JwtService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(JwtService $jwtService)
-    {
-        $this->jwtService = $jwtService;
-    }
+    public function __construct(protected JwtService $jwtService){}
 
+    /**
+     * @unauthenticated
+     */
     public function login(LoginRequest $request): JsonResponse
     {
         $payload = $request->validated();
@@ -46,83 +49,76 @@ class AuthController extends Controller
             RefreshToken::where('id_user', $request->user()->getKey())->delete();
         }
 
-        return response()->json([
-            "message" => "Successfully logged out"
-        ]);
+        return $this->successMessage('Successfully logged out');
     }
 
-    public function refresh(Request $request): JsonResponse
+    /**
+     * @unauthenticated
+     */
+    public function refresh(RefreshTokenRequest $request): JsonResponse
     {
         $refreshToken = $request->input('refresh_token') ?? $request->bearerToken();
+        $validated = $request->validated();
 
-        if(!$refreshToken) {
-            return response()->json([
-                "errors" => [
-                    "message" => [
-                        "refresh token is required"
-                    ]
-                ]
-            ], 422);
+        if(!$validated && !$refreshToken) {
+            return $this->errorResponse("Refresh token is required", 400);
         }
 
         $payload = $this->jwtService->verifyToken($refreshToken);
 
         if (!$payload || ($payload->type ?? null) !== 'refresh') {
-            return response()->json([
-                "errors" => [
-                    "message" => [
-                        "invalid refresh token"
-                    ]
-                ]
-            ], 401);
+            return $this->errorResponse('Invalid refresh token', 401);
         }
 
         $stored = RefreshToken::where('id_user', $payload->sub)
-            ->where('token', hash('sha256', $refreshToken))
+            ->where('token_hash', hash('sha256', $refreshToken))
+            ->whereNull('revoked_at')
             ->where('expires_at', '>', now())
             ->first();
             
         if (!$stored) {
-            return response()->json([
-                "errors" => [
-                    "message" => [
-                        "refresh token not found or expired"
-                    ]
-                ]
-            ], 401);
+            $previouslyValid = RefreshToken::where('id_user', $payload->sub)
+                ->where('token_hash', JwtService::hashToken($refreshToken))
+                ->whereNotNull('revoked_at')
+                ->exists();
+
+            if ($previouslyValid) {
+                // True replay attempt — burn everything.
+                RefreshToken::where('id_user', $payload->sub)->update(['revoked_at' => now()]);
+            }
+
+            return $this->errorResponse('Refresh token not found or expired', 401);
         }
 
         $user = User::find($payload->sub);
 
         if (!$user){
-            return response()->json([
-                "errors" => [
-                    "message" => [
-                        "user not found"
-                    ]
-                ]
-            ], 404);
+            return $this->errorResponse('User not found', 404);
         }
+        $stored->update(['revoked_at' => now()]);
 
         return $this->tokenResponse($user);
     }
 
-    private function tokenResponse(User $user, int $status = 200): JsonResponse
+    private function tokenResponse(User $user): JsonResponse
     {
-        $refreshToken = $this->jwtService->issueRefreshToken($user);
-        
-        $refresh = RefreshToken::create([
-            "user_id" => $user->id_user,
-            "token" => $refreshToken,
-            "expires_at" => now()->addMinutes($this->jwtService->getRefreshTtl()),
-        ]);
-        
-        return response()->json([
-            'access_token'  => $this->jwtService->issueAccessToken($user),
-            'refresh_token' => $refreshToken,
-            'token_type'    => 'Bearer',
-            'expires_in'    => $this->jwtService->getTtl(),
-            'user'          => $user,
-        ], $status);
+        return DB::transaction(function () use ($user) {
+            [$refreshToken, $jti] = $this->jwtService->issueRefreshToken($user);
+
+            RefreshToken::create([
+                'id_user'    => $user->getKey(),
+                'jti'        => $jti,
+                'token_hash' => $this->jwtService->hashToken($refreshToken),
+                'expires_at' => now()->addMinutes($this->jwtService->getRefreshTtl()),
+            ]);
+
+            return $this->successResponse([
+                'access_token'  => $this->jwtService->issueAccessToken($user),
+                'refresh_token' => $refreshToken,
+                'token_type'    => 'Bearer',
+                'expires_in'    => $this->jwtService->getTtl(),
+                'user'          => new UserResource($user->load('roles')),
+            ], 'Login Berhasil');
+        });
     }
 }

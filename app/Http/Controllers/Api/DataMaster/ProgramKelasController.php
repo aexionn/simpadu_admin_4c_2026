@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\DataMaster;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProgramKelas;
+use App\Http\Resources\ProgramKelasResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -11,9 +12,8 @@ class ProgramKelasController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json([
-            'data' => ProgramKelas::all(),
-        ]);
+        $data = ProgramKelas::all();
+        return $this->successCollection(ProgramKelasResource::collection($data), 'Data program kelas berhasil diambil');
     }
 
     public function store(Request $request): JsonResponse
@@ -25,17 +25,12 @@ class ProgramKelasController extends Controller
 
         $program = ProgramKelas::create($validated);
 
-        return response()->json([
-            'message' => 'Program kelas created successfully.',
-            'data'    => $program,
-        ], 201);
+        return $this->successResponse(new ProgramKelasResource($mk), 'Program kelas berhasil ditambahkan', 201);
     }
 
     public function show(int $id): JsonResponse
     {
-        $program = ProgramKelas::findOrFail($id);
-
-        return response()->json(['data' => $program]);
+        return $this->successResponse(new ProgramKelasResource(ProgramKelas::findOrFail($id)), 'Detail program kelas berhasil diambil');
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -49,19 +44,13 @@ class ProgramKelasController extends Controller
 
         $program->update($validated);
 
-        return response()->json([
-            'message' => 'Program kelas updated successfully.',
-            'data'    => $program,
-        ]);
+        return $this->successResponse(new ProgramKelasResource($mk), 'Program kelas berhasil diperbarui');
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $program = ProgramKelas::findOrFail($id);
-        $program->delete();
+        ProgramKelas::findOrFail($id)->delete();
 
-        return response()->json([
-            'message' => 'Program kelas deleted successfully.',
-        ]);
+        return $this->successMessage('Program kelas berhasil dihapus');
     }
 }

@@ -36,7 +36,10 @@ return [
     ],
 
     'prodi_api' => [
-        'base_url'  => env('PRODI_API_BASE_URL', 'https://adm.agussbn.my.id/api'),
-        'cache_ttl' => env('PRODI_API_CACHE_TTL', 3600),
+        'base_url'       => env('PRODI_API_BASE_URL'),
+        'cache_ttl'      => env('PRODI_API_CACHE_TTL', 3600),
+        'timeout'        => env('PRODI_API_TIMEOUT', 5),
+        'retries'        => env('PRODI_API_RETRIES', 2),
+        'retry_delay_ms' => env('PRODI_API_RETRY_DELAY_MS', 200),
     ],
 ];

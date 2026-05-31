@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Kurikulum extends Model
 {
     protected $table      = 'kurikulum';
+    public $incrementing = true;
     protected $primaryKey = 'ID_KURIKULUM';
 
     protected $fillable = [
@@ -15,23 +16,27 @@ class Kurikulum extends Model
         'NAMA_KURIKULUM',
         'CATATAN_KURIKULUM',
         'AKTIF_KURIKULUM',
+        'superseded_at',
     ];
 
     protected $casts = [
         'AKTIF_KURIKULUM' => StatusAktif::class,
+        'superseded_at'   => 'datetime',
     ];
+
+    public function mataKuliahs()
+    {
+         return $this->belongsToMany(Kurikulum::class, 'kurikulum_mk', 'ID_MK', 'ID_KURIKULUM')
+            ->withTimestamps();
+    }
 
     public function tahunAkademik()
     {
         return $this->belongsTo(TahunAkademik::class, 'ID_TAHUN_AKADEMIK', 'ID_TAHUN_AKADEMIK');
     }
 
-    /**
-     * A kurikulum is locked if it is inactive (AKTIF_KURIKULUM = 0).
-     * Once deactivated by a newer kurikulum, it becomes permanently read-only.
-     */
     public function isLocked(): bool
     {
-        return $this->AKTIF_KURIKULUM === StatusAktif::TidakAktif;
+        return $this->superseded_at !== null;
     }
 }

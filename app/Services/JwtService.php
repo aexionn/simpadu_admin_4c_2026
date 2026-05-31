@@ -44,9 +44,10 @@ class JwtService
         return JWT::encode($payload, $this->secret, $this->algo);
     }
 
-    public function issueRefreshToken(User $user): string
+    public function issueRefreshToken(User $user): array
     {
         $now = time();
+        $jti = bin2hex(random_bytes(16));
 
         $payload = [
             'iss' => $this->issuer,
@@ -54,16 +55,11 @@ class JwtService
             'iat' => $now,
             'exp' => $now + $this->refresh_ttl,
             'type' => 'refresh',
+            'jti' => $jti,
         ];
 
-        return JWT::encode($payload, $this->secret, $this->algo);
-
-        RefreshToken::where('id_user', $user->getKey())->delete();
-        RefreshToken::create([
-            "id_user" => $user->getKey(),
-            "token" => $refreshToken,
-            "expires_at" => now()->addMinutes($this->refresh_ttl),
-        ]);
+        $token = JWT::encode($payload, $this->secret, $this->algo); 
+        return [$token, $jti];
     }
 
     public function verifyToken(string $token): stdClass
@@ -79,23 +75,6 @@ class JwtService
         }
     }
 
-    // public function refreshAccessToken(string $refreshToken): string
-    // {
-    //     $payload = $this->verifyToken($refreshToken);
-
-    //     if ($payload->type !== 'refresh') {
-    //         throw new \Exception('Invalid token type');
-    //     } 
-
-    //     $user = User::find($payload->sub);
-
-    //     if (!$user) {
-    //         throw new \Exception('User not found');
-    //     }
-
-    //     return $this->issueAccessToken($user);
-    // }
-
     public function getTtl(): int
     {
         return $this->ttl;
@@ -110,7 +89,7 @@ class JwtService
     {
         $payload = $this->verifyToken($token);
 
-        if(!$payload) {
+        if(!$payload || !isset($payload->jti, $payload->exp)) {
             return;
         }
 
@@ -125,11 +104,16 @@ class JwtService
         }
     }
 
+    public function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
+    }
+
     public function isRevoked(string $token): bool
     {
         $payload = $this->verifyToken($token);
 
-        if(!$payload){
+        if(!$payload || !isset($payload->jti)){
             throw new \Exception('Invalid token');
         }
 

@@ -3,19 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+
+#[Fillable(['NAMA_TAHUN_AKADEMIK', 'AKTIF', 'TGL_AWAL_KULIAH', 'TGL_AKHIR_KULIAH',])]
 
 class TahunAkademik extends Model
 {
     protected $table      = 'tahun_akademik';
+    public $incrementing = true;
     protected $primaryKey = 'ID_TAHUN_AKADEMIK';
     public    $timestamps = false;           // intentionally no timestamps
-
-    protected $fillable = [
-        'NAMA_TAHUN_AKADEMIK',
-        'AKTIF',
-        'TGL_AWAL_KULIAH',
-        'TGL_AKHIR_KULIAH',
-    ];
 
     protected $casts = [
         'TGL_AWAL_KULIAH'  => 'date',

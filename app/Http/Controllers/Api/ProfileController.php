@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
+use App\Models\RefreshToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -11,36 +13,27 @@ class ProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $user = $request->user()->load('roles');
-
-        return response()->json([
-            'user' => [
-                'id_user' => $user->id_user,
-                'email' => $user->email,
-                'is_active' => $user->is_active,
-                'roles' => $user->roles->pluck('nama_role'),
-            ]
-        ]);
+        return $this->successResponse(
+            new UserResource($request->user()->load('roles')),
+            'Profile berhasil diambil'
+        );
     }
 
-    public function changeEmail(Request $request): JsonResponse
+    public function changeNameAndEmail(Request $request): JsonResponse
     {
         $user = $request->user();
 
         $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('user', 'email')->ignore($user->getKey(), 'id_user')],
         ]);
 
-        $user->update([
-            'email' => $validated['email'],
-        ]);
+        $user->update($validated);
 
-        return response()->json([
-            'message' => 'Email updated successfully',
-            'user' => [
-                'email' => $user->email
-            ] 
-        ]);
+        return $this->successResponse(
+            new UserResource($user->fresh()->load('roles')),
+            'Profile updated successfully'
+        );
     }
 
     public function changePassword(Request $request): JsonResponse
@@ -49,21 +42,19 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed', 'different:current:password'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed', 'different:current_password'],
         ]);
 
-        if (!\Hash::check($validated['current_password'], $user->password)) {
-            return response()->json([
-                'message' => 'Current password is incorrect',
-            ], 422);
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return $this->errorResponse('Current password is incorrect', 422);
         }
 
         $user->update([
-            'password' => \Hash::make($validated['new_password']),
+            'password' => Hash::make($validated['new_password']),
         ]);
 
-        return response()->json([
-            'message' => 'Password updated successfully, please login again',
-        ]);
+        RefreshToken::where('id_user', $user->getKey())->delete();
+
+        return $this->successMessage('Password updated successfully, please login again');
     }
 }
