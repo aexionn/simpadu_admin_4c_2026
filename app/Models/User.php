@@ -5,12 +5,13 @@ namespace App\Models;
 use App\Enums\StatusAktif;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $primaryKey = 'id_user';
     public $incrementing = true;
@@ -24,6 +25,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => StatusAktif::class,
+            'deleted_at'        => 'datetime',
         ];
     }
 

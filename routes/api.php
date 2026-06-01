@@ -54,8 +54,12 @@ Route::middleware('auth:jwt')->group(function () {
     Route::middleware('role:super_admin')->prefix('admin')->group(function () {
         Route::post('/users',              [UserManagementController::class, 'register']);
         Route::get('/users',               [UserManagementController::class, 'index']);
-        Route::patch('/users/{id}/toggle', [UserManagementController::class, 'toggleActiveStatus']);
-        Route::delete('/users/{id}',       [UserManagementController::class, 'destroy']);
+        Route::get('/users/trashed',             [UserManagementController::class, 'trashed']);
+        Route::patch('/users/{id_user}',         [UserManagementController::class, 'update']);
+        Route::patch('/users/{id_user}/toggle',  [UserManagementController::class, 'toggleActiveStatus']);
+        Route::delete('/users/{id_user}',        [UserManagementController::class, 'destroy']);
+        Route::post('/users/{id_user}/restore',  [UserManagementController::class, 'restore']);
+        Route::delete('/users/{id_user}/force',  [UserManagementController::class, 'forceDelete']);
 
         Route::get('/roles',               [RoleController::class, 'index']);
         Route::post('/roles',              [RoleController::class, 'store']);
