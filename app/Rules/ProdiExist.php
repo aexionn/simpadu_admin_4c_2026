@@ -7,7 +7,7 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-class ProdiExists implements ValidationRule
+class ProdiExist implements ValidationRule
 {
     /**
      * Run the validation rule.

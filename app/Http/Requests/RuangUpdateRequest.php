@@ -2,19 +2,18 @@
 
 namespace App\Http\Requests;
 
-use App\Rules\ProdiExist;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProdiDosenStoreRequest extends FormRequest
+class RuangUpdateRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
     public function rules(): array
     {
+        $id = $this->route('id');
         return [
-            'ID_PRODI'         => ['required', 'integer', new ProdiExist],
-            'NIP'              => 'required|string|max:20',
+            'NAMA_RUANG' => 'sometimes|string|max:40|unique:ruang,NAMA_RUANG,' . $id . ',id_ruang',
         ];
     }
 }

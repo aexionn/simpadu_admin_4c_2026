@@ -2,19 +2,17 @@
 
 namespace App\Http\Requests;
 
-use App\Rules\ProdiExist;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProdiDosenStoreRequest extends FormRequest
+class HariStoreRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
     public function rules(): array
     {
         return [
-            'ID_PRODI'         => ['required', 'integer', new ProdiExist],
-            'NIP'              => 'required|string|max:20',
+            'NAMA_HARI' => 'required|string|size:6|unique:hari,NAMA_HARI',
         ];
     }
 }

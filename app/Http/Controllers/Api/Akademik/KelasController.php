@@ -16,7 +16,7 @@ class KelasController extends Controller
     {
         $data = Kelas::with(['programKelas', 'tahunAkademik'])->orderByDesc('ID_KELAS')->get();
         return $this->successCollection(
-            KelasResource::collection($kelas),
+            KelasResource::collection($data),
             'Data kelas berhasil diambil'
         );
     }

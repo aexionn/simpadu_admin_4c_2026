@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('is_active', ['Y', 'T'])->default('Y');
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('roles', function (Blueprint $table) {

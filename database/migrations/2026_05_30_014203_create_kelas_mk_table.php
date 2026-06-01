@@ -13,11 +13,11 @@ return new class extends Migration
             $table->integer('ID_KELAS')->unsigned();
             $table->integer('ID_KURIKULUM_MK')->unsigned();
             $table->char('NIP', 20)->nullable();
-            $table->integer('ID_HARI')->nullable();
+            $table->integer('ID_HARI')->unsigned()->nullable();
             $table->time('WAKTU_MULAI');
             $table->time('WAKTU_AKHIR');
-            $table->integer('ID_RUANG')->unsigned();
-            $table->string('TEMA', 20);
+            $table->integer('ID_RUANG')->unsigned()->nullable();
+            $table->char('TEMA', 100);
             $table->longText('DESKRIPSI')->nullable();
             $table->timestamps();
 
@@ -32,6 +32,18 @@ return new class extends Migration
                   ->on('kurikulum_mk')
                   ->cascadeOnDelete()
                   ->cascadeOnUpdate();
+
+            $table->foreign('ID_RUANG')
+                ->references('ID_RUANG')
+                ->on('ruang')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
+
+            $table->foreign('ID_HARI')
+                ->references('ID_HARI')
+                ->on('hari')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             
             $table->index('NIP'); 
         });

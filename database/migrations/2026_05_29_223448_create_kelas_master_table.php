@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('ID_KELAS')->unsigned();
             $table->char('NIM', 11)->nullable();
             $table->integer('ID_TAHUN_AKADEMIK')->unsigned();
-            $table->tinyInteger('ID_STATUS_MHS')->nullable();
+            $table->enum('STATUS_MHS', ['Y', 'T'])->default('Y');
             $table->timestamps();
             
             $table->foreign('ID_TAHUN_AKADEMIK')

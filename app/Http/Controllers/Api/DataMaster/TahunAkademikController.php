@@ -59,10 +59,6 @@ class TahunAkademikController extends Controller
         $tahun = TahunAkademik::findOrFail($id);
         $validated = $request->validated();
 
-        $shouldActivate = ($validated['AKTIF'] ?? null) === 'Y';
-        unset($validated['AKTIF']);
-        $tahun->update($validated);
-
         DB::transaction(function () use ($tahun, $validated) {
             $shouldActivate = ($validated['AKTIF'] ?? null) === 'Y';
             unset($validated['AKTIF']);

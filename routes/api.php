@@ -15,9 +15,11 @@ use App\Http\Controllers\Api\Akademik\KurikulumMataKuliahController;
 use App\Http\Controllers\Api\Akademik\NilaiController;
 use App\Http\Controllers\Api\Akademik\PresensiMahasiswaController;
 use App\Http\Controllers\Api\Akademik\PresensiSesiController;
+use App\Http\Controllers\Api\DataMaster\HariController;
 use App\Http\Controllers\Api\DataMaster\KurikulumController;
 use App\Http\Controllers\Api\DataMaster\MataKuliahController;
 use App\Http\Controllers\Api\DataMaster\ProgramKelasController;
+use App\Http\Controllers\Api\DataMaster\RuangController;
 use App\Http\Controllers\Api\DataMaster\TahunAkademikController;
 use Illuminate\Support\Facades\Route;
 
@@ -82,6 +84,10 @@ Route::middleware('auth:jwt')->group(function () {
 
         // Read: all roles
         Route::middleware('role:super_admin,admin_akademik,pegawai,dosen,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
+            Route::get('hari',                       [HariController::class, 'index']);
+            Route::get('hari/{id}',                  [HariController::class, 'show']);
+            Route::get('ruang',                      [RuangController::class, 'index']);
+            Route::get('ruang/{id}',                 [RuangController::class, 'show']);
             Route::get('program-kelas',              [ProgramKelasController::class, 'index']);
             Route::get('program-kelas/{id}',         [ProgramKelasController::class, 'show']);
             Route::get('mata-kuliah',                [MataKuliahController::class, 'index']);
@@ -94,6 +100,12 @@ Route::middleware('auth:jwt')->group(function () {
 
         // Write: super_admin + admin_akademik
         Route::middleware('role:super_admin,admin_akademik')->group(function () {
+            Route::post('hari',                      [HariController::class, 'store']);
+            Route::patch('hari/{id}',                [HariController::class, 'update']);
+            Route::delete('hari/{id}',               [HariController::class, 'destroy']);
+            Route::post('ruang',                     [RuangController::class, 'store']);
+            Route::patch('ruang/{id}',               [RuangController::class, 'update']);
+            Route::delete('ruang/{id}',              [RuangController::class, 'destroy']);
             Route::post('program-kelas',             [ProgramKelasController::class, 'store']);
             Route::patch('program-kelas/{id}',       [ProgramKelasController::class, 'update']);
             Route::delete('program-kelas/{id}',      [ProgramKelasController::class, 'destroy']);

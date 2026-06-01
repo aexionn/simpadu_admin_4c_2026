@@ -25,7 +25,7 @@ class ProgramKelasController extends Controller
 
         $program = ProgramKelas::create($validated);
 
-        return $this->successResponse(new ProgramKelasResource($mk), 'Program kelas berhasil ditambahkan', 201);
+        return $this->successResponse(new ProgramKelasResource($program), 'Program kelas berhasil ditambahkan', 201);
     }
 
     public function show(int $id): JsonResponse
@@ -44,7 +44,7 @@ class ProgramKelasController extends Controller
 
         $program->update($validated);
 
-        return $this->successResponse(new ProgramKelasResource($mk), 'Program kelas berhasil diperbarui');
+        return $this->successResponse(new ProgramKelasResource($program), 'Program kelas berhasil diperbarui');
     }
 
     public function destroy(int $id): JsonResponse

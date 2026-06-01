@@ -13,7 +13,7 @@ return new class extends Migration
             $table->integer('ID_PRODI')->nullable();
             $table->integer('ID_PROGRAM')->unsigned();
             $table->smallInteger('SEMESTER');
-            $table->char('ALIAS', 1);
+            $table->char('ALIAS', 2);
             $table->string('KELAS_NAMA', 60);
             $table->timestamps();
 
