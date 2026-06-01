@@ -58,9 +58,8 @@ class AuthController extends Controller
     public function refresh(RefreshTokenRequest $request): JsonResponse
     {
         $refreshToken = $request->input('refresh_token') ?? $request->bearerToken();
-        $validated = $request->validated();
 
-        if(!$validated && !$refreshToken) {
+        if(!$refreshToken) {
             return $this->errorResponse("Refresh token is required", 400);
         }
 
@@ -71,14 +70,14 @@ class AuthController extends Controller
         }
 
         $stored = RefreshToken::where('id_user', $payload->sub)
-            ->where('token_hash', hash('sha256', $refreshToken))
+            ->where('token_hash', $this->jwtService->hashToken($refreshToken))
             ->whereNull('revoked_at')
             ->where('expires_at', '>', now())
             ->first();
             
         if (!$stored) {
             $previouslyValid = RefreshToken::where('id_user', $payload->sub)
-                ->where('token_hash', JwtService::hashToken($refreshToken))
+                ->where('token_hash', $this->jwtService->hashToken($refreshToken))
                 ->whereNotNull('revoked_at')
                 ->exists();
 

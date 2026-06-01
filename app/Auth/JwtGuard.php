@@ -52,7 +52,7 @@ class JwtGuard implements Guard
 
     public function validate(array $credentials = []): bool
     {
-        $user = $this->provider->retrieveByCredentials($crediantials);
+        $user = $this->provider->retrieveByCredentials($credentials);
 
         if ($user && $this->provider->validateCredentials($user, $credentials)) {
             $this->user = $user;

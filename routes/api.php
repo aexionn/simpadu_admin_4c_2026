@@ -29,9 +29,9 @@ use Illuminate\Support\Facades\Route;
 | writeRoles      — mutate data-master & general akademik resources
 | dosenWriteRoles — manage presensi sessions & manual roll-call
 */
-$readRoles       = 'super_admin,admin_akademik,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan';
-$writeRoles      = 'super_admin,admin_akademik';
-$dosenWriteRoles = 'super_admin,admin_akademik,dosen';
+// $readRoles       = 'super_admin,admin_akademik,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan';
+// $writeRoles      = 'super_admin,admin_akademik';
+// $dosenWriteRoles = 'super_admin,admin_akademik,dosen';
 
 // ── Public ────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -77,7 +77,7 @@ Route::middleware('auth:jwt')->group(function () {
     Route::prefix('data-master')->group(function () {
 
         // Read: all roles
-        Route::middleware('role:super_admin,admin_akademik,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,pegawai,dosen,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
             Route::get('program-kelas',              [ProgramKelasController::class, 'index']);
             Route::get('program-kelas/{id}',         [ProgramKelasController::class, 'show']);
             Route::get('mata-kuliah',                [MataKuliahController::class, 'index']);
@@ -111,7 +111,7 @@ Route::middleware('auth:jwt')->group(function () {
     Route::prefix('akademik')->group(function () {
 
         // ── Read: all roles ────────────────────────────────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
             // Kelas
             Route::get('kelas',                     [KelasController::class, 'index']);
             Route::get('kelas/{id}',                [KelasController::class, 'show']);
@@ -176,7 +176,7 @@ Route::middleware('auth:jwt')->group(function () {
         });
 
         // ── Presensi (dosen access) ────────────────────────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,dosen')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai')->group(function () {
             // QR Session management
             Route::post('presensi-sesi/generate',        [PresensiSesiController::class, 'generateSession']);
             Route::post('presensi-sesi/{id}/close',      [PresensiSesiController::class, 'closeSession']);

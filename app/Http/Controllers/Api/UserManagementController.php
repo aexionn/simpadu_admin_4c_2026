@@ -21,8 +21,8 @@ class UserManagementController extends Controller
 
         $user = DB::transaction(function () use ($payload) {
             $user = User::create([
-                'name'      => $payload['name'],
                 'email'     => $payload['email'],
+                'name'      => $payload['name'],
                 'password'  => Hash::make($payload['password']),
                 'is_active' => $payload['is_active'] ?? 'Y',
             ]);
