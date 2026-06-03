@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Mahasiswa\MahasiswaPresensiController;
+use App\Http\Controllers\Api\Mahasiswa\MahasiswaPresensiQrController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserManagementController;
