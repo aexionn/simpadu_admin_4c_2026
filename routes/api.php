@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Route;
 | writeRoles      — mutate data-master & general akademik resources
 | dosenWriteRoles — manage presensi sessions & manual roll-call
 */
-// $readRoles       = 'super_admin,admin_akademik,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan';
+// $readRoles       = 'super_admin,admin_akademik,pegawai,dosen,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan';
 // $writeRoles      = 'super_admin,admin_akademik';
 // $dosenWriteRoles = 'super_admin,admin_akademik,dosen';
 
