@@ -22,7 +22,7 @@ class Kurikulum extends Model
 
     protected $casts = [
         'AKTIF_KURIKULUM' => StatusAktif::class,
-        'superseded_at'   => 'datetime',
+        'superseded_at'   => 'datetime: Y-m-d',
     ];
 
     public function mataKuliahs()

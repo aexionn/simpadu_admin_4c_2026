@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Mahasiswa\MahasiswaPresensiQrController;
+use App\Http\Controllers\Api\PresensiPegawaiController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserManagementController;
@@ -77,6 +78,32 @@ Route::middleware('auth:jwt')->group(function () {
     // ═══════════════════════════════════════════════════════════════════════════
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
         Route::post('presensi/scan-qr', [MahasiswaPresensiController::class, 'submitQrAttendance']);
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ── Presensi Pegawai ───────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════════
+    Route::prefix('presensi-pegawai')->group(function () {
+
+        // ── Employee self-service (pegawai role) ───────────────────────────
+        Route::middleware('role:super_admin,admin_akademik,pegawai')->group(function () {
+            // Custom attendance actions (concrete paths BEFORE {id})
+            Route::post('/masuk',     [PresensiPegawaiController::class, 'masuk']);
+            Route::post('/keluar',    [PresensiPegawaiController::class, 'keluar']);
+            Route::get('/hari-ini',   [PresensiPegawaiController::class, 'hariIni']);
+            Route::get('/rekap',      [PresensiPegawaiController::class, 'rekap']);
+
+            // Read
+            Route::get('/',          [PresensiPegawaiController::class, 'index']);
+            Route::get('/{id}',      [PresensiPegawaiController::class, 'show']);
+        });
+
+        // ── Admin-only CRUD mutations ──────────────────────────────────────
+        Route::middleware('role:super_admin,admin_akademik')->group(function () {
+            Route::post('/',         [PresensiPegawaiController::class, 'store']);
+            Route::patch('/{id}',    [PresensiPegawaiController::class, 'update']);
+            Route::delete('/{id}',   [PresensiPegawaiController::class, 'destroy']);
+        });
     });
 
     // ═══════════════════════════════════════════════════════════════════════════

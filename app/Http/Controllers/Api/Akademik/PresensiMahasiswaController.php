@@ -19,8 +19,6 @@ class PresensiMahasiswaController extends Controller
         'presensiSesi',
     ];
 
-    // ── Read ───────────────────────────────────────────────────────────────────
-
     public function index(): JsonResponse
     {
         $presensi = PresensiMahasiswa::with(self::EAGER)
@@ -42,8 +40,6 @@ class PresensiMahasiswaController extends Controller
             'Detail Presensi Mahasiswa berhasil diambil'
         );
     }
-
-    // ── Admin Correction (with audit log) ─────────────────────────────────────
 
     /**
      * Update an attendance record — restricted to admin roles.
@@ -81,8 +77,6 @@ class PresensiMahasiswaController extends Controller
             'Presensi Mahasiswa berhasil diperbarui'
         );
     }
-
-    // ── Batch Manual Roll Call ─────────────────────────────────────────────────
 
     /**
      * Submit a batch of manual roll-call attendance records.
