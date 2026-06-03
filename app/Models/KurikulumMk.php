@@ -17,7 +17,7 @@ class KurikulumMk extends Model
 
     public function mataKuliah()
     {
-        return $this->belongsTo(MataKuliah::class, 'ID_MK', 'ID_MK');
+        return $this->belongsTo(MataKuliah::class, 'ID_MK', 'ID_MK')->withTimestamps();
     }
 
     public function kurikulum()

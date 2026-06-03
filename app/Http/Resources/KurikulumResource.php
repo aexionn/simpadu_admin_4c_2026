@@ -18,9 +18,7 @@ class KurikulumResource extends JsonResource
             'is_locked'           => $this->isLocked(),
             'superseded_at'       => $this->superseded_at?->toDateTimeString(),
             'tahun_akademik'      => new TahunAkademikResource($this->whenLoaded('tahunAkademik')),
-            'mata_kuliahs'        => MataKuliahResource::collection($this->whenLoaded('mataKuliahs')),
-            'created_at'          => $this->created_at?->toDateTimeString(),
-            'updated_at'          => $this->updated_at?->toDateTimeString(),
+            'mata_kuliah'         => MataKuliahResource::collection($this->whenLoaded('mataKuliahs')),
         ];
     }
 }

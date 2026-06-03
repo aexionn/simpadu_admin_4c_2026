@@ -20,8 +20,7 @@ class KurikulumController extends Controller
     {
         $data = Kurikulum::with('tahunAkademik')
             ->orderByDesc('ID_KURIKULUM')
-            ->get()
-            ->map(fn ($k) => array_merge($k->toArray(), ['is_locked' => $k->isLocked()]));
+            ->get();
 
         return $this->successCollection(
             KurikulumResource::collection($data),

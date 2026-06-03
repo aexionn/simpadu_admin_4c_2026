@@ -10,6 +10,7 @@ class Kurikulum extends Model
     protected $table      = 'kurikulum';
     public $incrementing = true;
     protected $primaryKey = 'ID_KURIKULUM';
+    public $timestamps = false;
 
     protected $fillable = [
         'ID_TAHUN_AKADEMIK',
@@ -26,8 +27,7 @@ class Kurikulum extends Model
 
     public function mataKuliahs()
     {
-         return $this->belongsToMany(Kurikulum::class, 'kurikulum_mk', 'ID_MK', 'ID_KURIKULUM')
-            ->withTimestamps();
+        return $this->belongsToMany(MataKuliah::class, 'kurikulum_mk', 'ID_KURIKULUM', 'ID_MK');
     }
 
     public function tahunAkademik()

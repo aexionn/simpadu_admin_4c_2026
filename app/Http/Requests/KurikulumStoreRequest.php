@@ -15,7 +15,7 @@ class KurikulumStoreRequest extends FormRequest
             'ID_TAHUN_AKADEMIK' => 'required|integer|exists:tahun_akademik,ID_TAHUN_AKADEMIK',
             'NAMA_KURIKULUM'    => 'required|string|max:40',
             'CATATAN_KURIKULUM' => 'nullable|string',
-            'AKTIF_KURIKULUM'   => 'required|in:Y,T',
+            'AKTIF_KURIKULUM'   => 'required|in:Y,T'
         ];
     }
 }

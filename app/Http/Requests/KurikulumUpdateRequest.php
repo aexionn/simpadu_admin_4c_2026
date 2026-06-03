@@ -16,6 +16,7 @@ class KurikulumUpdateRequest extends FormRequest
             'NAMA_KURIKULUM'    => 'sometimes|string|max:40',
             'CATATAN_KURIKULUM' => 'nullable|string',
             'AKTIF_KURIKULUM'   => 'sometimes|in:Y,T',
+            'superseded_at'     => 'sometimes|date'
         ];
     }
 }
