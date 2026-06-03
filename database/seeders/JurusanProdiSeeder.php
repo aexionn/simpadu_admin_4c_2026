@@ -7,7 +7,7 @@ use App\Models\Prodi;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class Jurusanprodieeder extends Seeder
+class JurusanProdiSeeder extends Seeder
 {
     public function run(): void
     {

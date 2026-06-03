@@ -24,18 +24,13 @@ class Kelas extends Model
         return $this->belongsTo(ProgramKelas::class, 'ID_PROGRAM', 'ID_PROGRAM');
     }
 
-    public function tahunAkademik()
-    {
-        return $this->belongsTo(TahunAkademik::class, 'ID_TAHUN_AKADEMIK', 'ID_TAHUN_AKADEMIK');
-    }
-
     public function kelasMasters()
     {
         return $this->hasMany(KelasMaster::class, 'ID_KELAS', 'ID_KELAS');
     }
 
-    public function mahasiswas()
+    public function kelasMks()
     {
-        return $this->hasMany(KelasMahasiswa::class, 'ID_KELAS', 'ID_KELAS');
+        return $this->hasMany(KelasMk::class, 'ID_KELAS', 'ID_KELAS');
     }
 }

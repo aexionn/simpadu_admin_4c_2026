@@ -15,7 +15,6 @@ class KelasStoreRequest extends FormRequest
         return [
             'ID_PRODI'        => ['required', 'integer', new ProdiExist],
             'ID_PROGRAM'      => 'required|integer|exists:program_kelas,ID_PROGRAM',
-            'ID_TAHUN_AKADEMIK' => 'required|integer|exists:tahun_akademik,ID_TAHUN_AKADEMIK',
             'SEMESTER'        => 'required|integer|min:1|max:14',
             'ALIAS'           => 'required|string|size:2',
             'KELAS_NAMA'      => 'required|string|max:60',

@@ -7,6 +7,7 @@ use App\Http\Requests\KelasStoreRequest;
 use App\Http\Requests\KelasUpdateRequest;
 use App\Http\Resources\KelasResource;
 use App\Models\Kelas;
+use App\Services\ProdiClientService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -14,7 +15,7 @@ class KelasController extends Controller
 {
     public function index(): JsonResponse
     {
-        $data = Kelas::with(['programKelas', 'tahunAkademik'])->orderByDesc('ID_KELAS')->get();
+        $data = Kelas::with('programKelas')->orderByDesc('ID_KELAS')->get();
         return $this->successCollection(
             KelasResource::collection($data),
             'Data kelas berhasil diambil'
@@ -26,18 +27,18 @@ class KelasController extends Controller
         $validated = $request->validated();
 
         try {
-            $prodiervice = app(ProdiClientService::class);
-            if ($prodiervice->getProdi((int) $validated['ID_PRODI']) === null) {
+            $prodiService = app(ProdiClientService::class);
+            if ($prodiService->getProdi((int) $validated['ID_PRODI']) === null) {
                 return $this->errorResponse('Prodi tidak ditemukan di sistem eksternal', 502);
             }
         } catch (\Exception $e) {
-            return $this->errorResponse('Gagal menghubungi layanan prodi', 503);
+            return $this->errorResponse('Gagal menghubungi layanan prodi' . $e->getMessage(), 503);
         }
 
         $kelas = DB::transaction(fn () => Kelas::create($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->load(['programKelas', 'tahunAkademik'])),
+            new KelasResource($kelas->load('programKelas')),
             'Kelas berhasil ditambahkan',
             201
         );
@@ -45,7 +46,7 @@ class KelasController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $kelas = Kelas::with(['programKelas', 'tahunAkademik', 'mahasiswas', 'kelasMasters'])
+        $kelas = Kelas::with('programKelas')
             ->findOrFail($id);
 
         return $this->successResponse(
@@ -61,8 +62,8 @@ class KelasController extends Controller
 
         if (isset($validated['ID_PRODI'])) {
             try {
-                $prodiervice = app(ProdiClientService::class);
-                if ($prodiervice->getProdi((int) $validated['ID_PRODI']) === null) {
+                $prodiService = app(ProdiClientService::class);
+                if ($prodiService->getProdi((int) $validated['ID_PRODI']) === null) {
                     return $this->errorResponse('Prodi tidak ditemukan di sistem eksternal', 502);
                 }
             } catch (\Exception $e) {
@@ -73,7 +74,7 @@ class KelasController extends Controller
         DB::transaction(fn () => $kelas->update($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->fresh()->load(['programKelas', 'tahunAkademik'])),
+            new KelasResource($kelas->fresh()->load('programKelas')),
             'Kelas berhasil diperbarui'
         );
     }
@@ -84,23 +85,23 @@ class KelasController extends Controller
         return $this->successMessage('Kelas berhasil dihapus');
     }
 
-    public function addStudent(int $kelasId, KelasMahasiswaStoreRequest $request): JsonResponse
-    {
-        $kelas = Kelas::findOrFail($kelasId);
-        DB::transaction(fn () => $kelas->mahasiswas()->create($request->validated()));
+    // public function addStudent(int $kelasId, KelasMahasiswaStoreRequest $request): JsonResponse
+    // {
+    //     $kelas = Kelas::findOrFail($kelasId);
+    //     DB::transaction(fn () => $kelas->mahasiswas()->create($request->validated()));
 
-        return $this->successResponse(
-            new KelasMahasiswaResource($mahasiswa),
-            'Mahasiswa berhasil ditambahkan ke kelas',
-            201
-        );
-    }
+    //     return $this->successResponse(
+    //         new KelasMahasiswaResource($mahasiswa),
+    //         'Mahasiswa berhasil ditambahkan ke kelas',
+    //         201
+    //     );
+    // }
 
-    public function removeStudent(int $kelasId, int $mahasiswaId): JsonResponse
-    {
-        $kelas = Kelas::findOrFail($kelasId);
-        DB::transaction(fn () => $kelas->mahasiswas()->where('ID_BERGABUNG', $mahasiswaId)->delete());
+    // public function removeStudent(int $kelasId, int $mahasiswaId): JsonResponse
+    // {
+    //     $kelas = Kelas::findOrFail($kelasId);
+    //     DB::transaction(fn () => $kelas->mahasiswas()->where('ID_BERGABUNG', $mahasiswaId)->delete());
 
-        return $this->successMessage('Mahasiswa berhasil dikeluarkan dari kelas');
-    }
+    //     return $this->successMessage('Mahasiswa berhasil dikeluarkan dari kelas');
+    // }
 }

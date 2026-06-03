@@ -28,36 +28,66 @@ class ProdiClientService
 
     public function getProdi(int $prodiId): ?Prodi
     {
-        return $this->rememberOrFetch(
+        $data = $this->rememberOrFetch(
             "prodi:{$prodiId}",
-            fn () => Prodi::find($prodiId)
+            function () use ($prodiId): ?array {
+                $model = Prodi::find($prodiId);
+                return $model ? $model->toArray() : null;
+            }
         );
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        return Prodi::hydrate([$data])->first();
     }
 
     public function getAllProdi(): Collection
     {
-        return $this->rememberOrFetch(
+        $data = $this->rememberOrFetch(
             'prodi:all',
-            fn () => Prodi::with('jurusan')->get(),
-            collect()
+            fn (): array => Prodi::with('jurusan')->get()->toArray(),
+            []
         );
+
+        if (!is_array($data) || empty($data)) {
+            return Prodi::hydrate([]);
+        }
+
+        return Prodi::hydrate($data);
     }
 
     public function getJurusan(int $jurusanId): ?Jurusan
     {
-        return $this->rememberOrFetch(
+        $data = $this->rememberOrFetch(
             "jurusan:{$jurusanId}",
-            fn () => Jurusan::find($jurusanId)
+            function () use ($jurusanId): ?array {
+                $model = Jurusan::find($jurusanId);
+                return $model ? $model->toArray() : null;
+            }
         );
+
+        if (!is_array($data)) {
+            return null;
+        }
+
+        return Jurusan::hydrate([$data])->first();
     }
 
     public function getAllJurusan(): Collection
     {
-        return $this->rememberOrFetch(
+        $data = $this->rememberOrFetch(
             'jurusan:all',
-            fn () => Jurusan::all(),
-            collect()
+            fn (): array => Jurusan::all()->toArray(),
+            []
         );
+
+        if (!is_array($data) || empty($data)) {
+            return Jurusan::hydrate([]);
+        }
+
+        return Jurusan::hydrate($data);
     }
 
     /**
@@ -73,7 +103,10 @@ class ProdiClientService
         foreach ($ids as $id) {
             $cached = Cache::get("prodi:{$id}");
             if ($cached !== null) {
-                $result[$id] = $cached;
+                // Cache stores arrays — hydrate back to model
+                $result[$id] = is_array($cached)
+                    ? Prodi::hydrate([$cached])->first()
+                    : $cached;
             } else {
                 $missing[] = $id;
             }
@@ -82,7 +115,8 @@ class ProdiClientService
         if ($missing) {
             $fetched = Prodi::whereIn('id_prodi', $missing)->get();
             foreach ($fetched as $prodi) {
-                Cache::put("prodi:{$prodi->id_prodi}", $prodi, $this->cacheTtl);
+                // Store plain array in cache, NEVER the model instance
+                Cache::put("prodi:{$prodi->id_prodi}", $prodi->toArray(), $this->cacheTtl);
                 $result[$prodi->id_prodi] = $prodi;
             }
         }
@@ -114,6 +148,8 @@ class ProdiClientService
     {
         $cached = Cache::get($key);
         if ($cached !== null) {
+            // May be an array (new format) or a stale Model (old/broken cache).
+            // Always return as-is; callers are responsible for hydration.
             return $cached;
         }
 
@@ -127,14 +163,13 @@ class ProdiClientService
             }
 
             $data = $fetcher();
-            if ($data === null || (is_countable($data) && count($data) === 0 && $data instanceof Collection)) {
-                // Distinguish "not found" (null model) from "empty collection" —
-                // for single-model fetchers null means not found → return fallback.
-                if ($data === null) {
-                    return $fallback;
-                }
+
+            // null means "not found" — do not cache, return fallback
+            if ($data === null) {
+                return $fallback;
             }
 
+            // Store only plain PHP arrays in cache
             Cache::put($key, $data, $this->cacheTtl);
             return $data;
         } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
