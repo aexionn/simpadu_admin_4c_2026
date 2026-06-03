@@ -13,7 +13,7 @@ return new class extends Migration
             $table->integer('ID_KELAS_MK')->unsigned();
             $table->integer('PERTEMUAN_KE');
             $table->string('session_token', 64)->unique();
-            $table->dateTime('expires_at');
+            $table->timestamp('expires_at');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

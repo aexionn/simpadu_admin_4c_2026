@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class AbsensiPegawai extends Model
+class PresensiPegawai extends Model
 {
-    protected $table = 'absensi_pegawai';
+    protected $table = 'presensi_pegawai';
     protected $primaryKey = 'ID_PRESENSI';
     public $incrementing = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'NIP',

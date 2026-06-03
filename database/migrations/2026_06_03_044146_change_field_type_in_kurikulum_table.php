@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('kurikulum', function (Blueprint $table) {
-             $table->timestamp('superseded_at')->change();
+            $table->timestamp('superseded_at')->change();
         });
     }
 };

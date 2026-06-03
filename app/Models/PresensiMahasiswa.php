@@ -9,6 +9,7 @@ class PresensiMahasiswa extends Model
     protected $table = 'presensi_mahasiswa';
     protected $primaryKey = 'ID_PRESENSI';
     public $incrementing = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'ID_KELAS_MASTER',

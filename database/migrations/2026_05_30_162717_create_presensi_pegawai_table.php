@@ -14,9 +14,8 @@ return new class extends Migration
             $table->enum('STATUS_PRESENSI', ['H', 'I', 'S', 'A']);
             $table->time('WAKTU_MASUK');
             $table->time('WAKTU_KELUAR');
-            $table->date('TANGGAL');
+            $table->timestamp('TANGGAL');
             $table->text('KETERANGAN')->nullable();
-            $table->timestamps();
             $table->index('NIP');
         });
     }

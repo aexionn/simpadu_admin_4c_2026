@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class AbsensiPegawaiStoreRequest extends FormRequest
+class PresensiPegawaiStoreRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 

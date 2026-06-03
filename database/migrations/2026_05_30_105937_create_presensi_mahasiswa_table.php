@@ -18,7 +18,6 @@ return new class extends Migration
             $table->integer('ID_SESI')->unsigned()->nullable();
             $table->enum('STATUS_PRESENSI', ['H', 'I', 'S', 'A']);
             $table->string('METODE', 50);
-            $table->timestamps();
 
             $table->foreign('ID_KELAS_MK')
                   ->references('ID_KELAS_MK')

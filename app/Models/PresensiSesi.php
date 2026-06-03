@@ -9,6 +9,7 @@ class PresensiSesi extends Model
     protected $table = 'presensi_sesi';
     protected $primaryKey = 'ID_SESI';
     public $incrementing = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'ID_KELAS_MK',
