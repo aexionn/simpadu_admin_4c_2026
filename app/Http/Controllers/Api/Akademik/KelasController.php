@@ -26,8 +26,8 @@ class KelasController extends Controller
         $validated = $request->validated();
 
         try {
-            $prodiService = app(ProdiClientService::class);
-            if ($prodiService->getProdi((int) $validated['ID_PRODI']) === null) {
+            $prodiervice = app(ProdiClientService::class);
+            if ($prodiervice->getProdi((int) $validated['ID_PRODI']) === null) {
                 return $this->errorResponse('Prodi tidak ditemukan di sistem eksternal', 502);
             }
         } catch (\Exception $e) {
@@ -61,8 +61,8 @@ class KelasController extends Controller
 
         if (isset($validated['ID_PRODI'])) {
             try {
-                $prodiService = app(ProdiClientService::class);
-                if ($prodiService->getProdi((int) $validated['ID_PRODI']) === null) {
+                $prodiervice = app(ProdiClientService::class);
+                if ($prodiervice->getProdi((int) $validated['ID_PRODI']) === null) {
                     return $this->errorResponse('Prodi tidak ditemukan di sistem eksternal', 502);
                 }
             } catch (\Exception $e) {

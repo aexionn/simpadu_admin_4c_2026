@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Response;
+use App\Models\Jurusan;
+use App\Models\Prodi;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class ProdiClientService
@@ -15,59 +15,59 @@ class ProdiClientService
     private int $timeout;
     private int $retries;
     private int $retryDelayMs;
-    private ?string $apiKey;
 
     public function __construct()
     {
-        $this->baseUrl      = rtrim(config('services.prodi_api.base_url'), '/');
+        // Kept for future HTTP reversion; currently unused.
+        $this->baseUrl      = rtrim(config('services.prodi_api.base_url', ''), '/');
         $this->cacheTtl     = (int) config('services.prodi_api.cache_ttl', 3600);
         $this->timeout      = (int) config('services.prodi_api.timeout', 5);
         $this->retries      = (int) config('services.prodi_api.retries', 2);
         $this->retryDelayMs = (int) config('services.prodi_api.retry_delay_ms', 200);
     }
 
-    public function getProdi(int $prodiId): ?array
+    public function getProdi(int $prodiId): ?Prodi
     {
         return $this->rememberOrFetch(
             "prodi:{$prodiId}",
-            fn () => $this->request("/prodi/{$prodiId}")
+            fn () => Prodi::find($prodiId)
         );
     }
 
-    public function getAllProdi(): array
+    public function getAllProdi(): Collection
     {
         return $this->rememberOrFetch(
             'prodi:all',
-            fn () => $this->request('/prodi'),
-            []
+            fn () => Prodi::with('jurusan')->get(),
+            collect()
         );
     }
 
-    public function getJurusan(int $jurusanId): ?array
+    public function getJurusan(int $jurusanId): ?Jurusan
     {
         return $this->rememberOrFetch(
             "jurusan:{$jurusanId}",
-            fn () => $this->request("/jurusan/{$jurusanId}")
+            fn () => Jurusan::find($jurusanId)
         );
     }
 
-    public function getAllJurusan(): array
+    public function getAllJurusan(): Collection
     {
         return $this->rememberOrFetch(
             'jurusan:all',
-            fn () => $this->request('/jurusan'),
-            []
+            fn () => Jurusan::all(),
+            collect()
         );
     }
 
     /**
-     * Fetch many prodi at once. Returns id => data. Cache-hits avoid network;
-     * misses are batched in a single upstream call when supported, otherwise fall back.
+     * Fetch many prodi at once. Returns a Collection keyed by id_prodi.
+     * Cache-hits avoid DB queries; misses are fetched in a single whereIn().
      */
-    public function getProdiByIds(array $ids): array
+    public function getProdiByIds(array $ids): Collection
     {
-        $ids    = array_values(array_unique(array_map('intval', $ids)));
-        $result = [];
+        $ids     = array_values(array_unique(array_map('intval', $ids)));
+        $result  = collect();
         $missing = [];
 
         foreach ($ids as $id) {
@@ -80,15 +80,10 @@ class ProdiClientService
         }
 
         if ($missing) {
-            $fetched = $this->request('/prodi', ['ids' => implode(',', $missing)]);
-            if (is_array($fetched)) {
-                foreach ($fetched as $row) {
-                    $id = $row['id'] ?? null;
-                    if ($id !== null) {
-                        Cache::put("prodi:{$id}", $row, $this->cacheTtl);
-                        $result[$id] = $row;
-                    }
-                }
+            $fetched = Prodi::whereIn('id_prodi', $missing)->get();
+            foreach ($fetched as $prodi) {
+                Cache::put("prodi:{$prodi->id_prodi}", $prodi, $this->cacheTtl);
+                $result[$prodi->id_prodi] = $prodi;
             }
         }
 
@@ -124,16 +119,20 @@ class ProdiClientService
 
         $lock = Cache::lock("lock:{$key}", 10);
         try {
-            $lock->block(5); 
-            
+            $lock->block(5);
+
             $cached = Cache::get($key);
             if ($cached !== null) {
                 return $cached;
             }
 
             $data = $fetcher();
-            if ($data === null) {
-                return $fallback;
+            if ($data === null || (is_countable($data) && count($data) === 0 && $data instanceof Collection)) {
+                // Distinguish "not found" (null model) from "empty collection" —
+                // for single-model fetchers null means not found → return fallback.
+                if ($data === null) {
+                    return $fallback;
+                }
             }
 
             Cache::put($key, $data, $this->cacheTtl);
@@ -144,45 +143,5 @@ class ProdiClientService
         } finally {
             optional($lock)->release();
         }
-    }
-
-    private function request(string $path, array $query = []): ?array
-    {
-        try {
-            $req = Http::timeout($this->timeout)
-                ->retry($this->retries, $this->retryDelayMs, throw: false)
-                ->acceptJson();
-
-            $response = $req->get($this->baseUrl . $path, $query);
-
-            return $this->handleResponse($response, $path);
-        } catch (ConnectionException $e) {
-            Log::warning('Prodi API connection failed', [
-                'path'  => $path,
-                'error' => $e->getMessage(),
-            ]);
-            return null;
-        } catch (\Throwable $e) {
-            Log::error('Prodi API unexpected error', [
-                'path'  => $path,
-                'error' => $e->getMessage(),
-            ]);
-            return null;
-        }
-    }
-
-    private function handleResponse(Response $response, string $path): ?array
-    {
-        if ($response->failed()) {
-            Log::warning('Prodi API failure response', [
-                'path'   => $path,
-                'status' => $response->status(),
-                'body'   => mb_substr($response->body(), 0, 500),
-            ]);
-            return null;
-        }
-
-        $json = $response->json();
-        return is_array($json) ? $json : null;
     }
 }
