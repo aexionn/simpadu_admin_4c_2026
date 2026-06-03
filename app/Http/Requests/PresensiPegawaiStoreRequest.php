@@ -14,9 +14,9 @@ class PresensiPegawaiStoreRequest extends FormRequest
         return [
             'NIP'             => 'required|string|max:20',
             'STATUS_PRESENSI' => 'required|in:H,I,S,A',
-            'WAKTU_MASUK'     => 'nullable|date_format:H:i',
-            'WAKTU_KELUAR'    => 'nullable|date_format:H:i|after:WAKTU_MASUK',
-            'TANGGAL'         => 'required|date',
+            'WAKTU_MASUK'     => 'nullable|date_format:H:i:s',
+            'WAKTU_KELUAR'    => 'nullable|date_format:H:i:s|after:WAKTU_MASUK',
+            'TANGGAL'         => 'required|date_format:Y-m-d',
             'KETERANGAN'      => 'nullable|string',
         ];
     }

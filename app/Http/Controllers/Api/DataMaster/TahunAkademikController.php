@@ -26,8 +26,8 @@ class TahunAkademikController extends Controller
         $validated = $request->validate([
             'NAMA_TAHUN_AKADEMIK' => 'required|string|max:40|unique:tahun_akademik,NAMA_TAHUN_AKADEMIK',
             'AKTIF'               => 'required|in:Y,T',
-            'TGL_AWAL_KULIAH'     => 'required|date',
-            'TGL_AKHIR_KULIAH'    => 'required|date|after:TGL_AWAL_KULIAH',
+            'TGL_AWAL_KULIAH'     => 'required|date_format:Y-m-d',
+            'TGL_AKHIR_KULIAH'    => 'required|date_format:Y-m-d|after:TGL_AWAL_KULIAH',
         ]);
 
         $tahun = DB::transaction(function () use ($validated) {
