@@ -77,7 +77,7 @@ Route::middleware('auth:jwt')->group(function () {
     // ── Mahasiswa ──────────────────────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════════════════════
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
-        Route::post('presensi/scan-qr', [MahasiswaPresensiController::class, 'submitQrAttendance']);
+        Route::post('presensi/scan-qr', [MahasiswaPresensiQrController::class, 'submitQrAttendance']);
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -232,6 +232,8 @@ Route::middleware('auth:jwt')->group(function () {
 
         // ── Presensi (dosen access) ────────────────────────────────────────────
         Route::middleware('role:super_admin,admin_akademik,dosen,pegawai')->group(function () {
+            // Class roster for manual roll-call
+            Route::get('presensi-mahasiswa/roster',      [PresensiMahasiswaController::class, 'getRoster']);
             // QR Session management
             Route::post('presensi-sesi/generate',        [PresensiSesiController::class, 'generateSession']);
             Route::post('presensi-sesi/{id}/close',      [PresensiSesiController::class, 'closeSession']);

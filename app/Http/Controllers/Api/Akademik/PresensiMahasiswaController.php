@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Api\Akademik;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PresensiMahasiswaBatchStoreRequest;
 use App\Http\Requests\PresensiMahasiswaUpdateRequest;
+use App\Models\KelasMaster;
+use App\Models\KelasMk;
 use App\Models\LogAktivitas;
 use App\Models\PresensiMahasiswa;
+use App\Models\User;
 use App\Http\Resources\PresensiMahasiswaResource;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PresensiMahasiswaController extends Controller
@@ -76,6 +80,60 @@ class PresensiMahasiswaController extends Controller
             new PresensiMahasiswaResource($presensi->fresh()->load(self::EAGER)),
             'Presensi Mahasiswa berhasil diperbarui'
         );
+    }
+
+    /**
+     * Get the class roster with current attendance status for a specific meeting.
+     *
+     * Used by the Manual Roll Call UI. Returns every enrolled student along
+     * with their attendance status (null if not yet recorded).
+     *
+     * Query parameters:
+     * - id_kelas_mk  (required, integer, exists:kelas_mk,ID_KELAS_MK)
+     * - pertemuan_ke (required, integer, min:1)
+     */
+    public function getRoster(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_kelas_mk'  => 'required|integer|exists:kelas_mk,ID_KELAS_MK',
+            'pertemuan_ke' => 'required|integer|min:1',
+        ]);
+
+        $idKelasMk   = (int) $validated['id_kelas_mk'];
+        $pertemuanKe = (int) $validated['pertemuan_ke'];
+
+        // 1. Find KelasMk to get the ID_KELAS
+        $kelasMk = KelasMk::findOrFail($idKelasMk);
+
+        // 2. Fetch all enrolled students (KelasMaster) for that class
+        $kelasMasterList = KelasMaster::where('ID_KELAS', $kelasMk->ID_KELAS)
+            ->orderBy('NO_ABSEN')
+            ->get();
+
+        // 3. Fetch existing attendance records for this meeting
+        $presensiList = PresensiMahasiswa::where('ID_KELAS_MK', $idKelasMk)
+            ->where('PERTEMUAN_KE', $pertemuanKe)
+            ->get()
+            ->keyBy('ID_KELAS_MASTER');
+
+        // 4. Batch-load student names (User.username stores NIM)
+        $nims  = $kelasMasterList->pluck('NIM')->filter()->unique()->values()->toArray();
+        $users = User::whereIn('username', $nims)->get()->keyBy('username');
+
+        // 5. Build the roster
+        $roster = $kelasMasterList->map(function (KelasMaster $km) use ($presensiList, $users) {
+            $presensi = $presensiList->get($km->ID_KELAS_MASTER);
+
+            return [
+                'id_kelas_master' => $km->ID_KELAS_MASTER,
+                'nim'             => $km->NIM,
+                'nama_mahasiswa'  => $users->get($km->NIM)?->name,
+                'status_presensi' => $presensi?->STATUS_PRESENSI,
+                'metode'          => $presensi?->METODE,
+            ];
+        });
+
+        return $this->successResponse($roster, 'Data roster berhasil diambil');
     }
 
     /**
