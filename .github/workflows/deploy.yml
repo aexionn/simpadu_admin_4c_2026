@@ -3,7 +3,7 @@ name: Deploy API to PBL VPS Admin 4C
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   deploy-to-vps-pbl:
     runs-on: ubuntu-latest
