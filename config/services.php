@@ -42,4 +42,14 @@ return [
         'retries'        => env('PRODI_API_RETRIES', 2),
         'retry_delay_ms' => env('PRODI_API_RETRY_DELAY_MS', 200),
     ],
+
+
+    'pegawai_api' => [
+        'base_url'       => env('PEGAWAI_API_BASE_URL', 'https://api-pegawai-4c.akufarish.my.id:9001/api/pegawai'),
+        'api_token'      => env('PEGAWAI_API_TOKEN', '264|ys67ffrV3ZtDDjk8KuzytYGAXy5yIAVzMNfIZljD341b1a37'),
+        'cache_ttl'      => env('PEGAWAI_API_CACHE_TTL', 3600),
+        'timeout'        => env('PEGAWAI_API_TIMEOUT', 5),
+        'retries'        => env('PEGAWAI_API_RETRIES', 2),
+        'retry_delay_ms' => env('PEGAWAI_API_RETRY_DELAY_MS', 200),
+    ],
 ];

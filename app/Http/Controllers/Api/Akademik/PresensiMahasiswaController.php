@@ -116,9 +116,9 @@ class PresensiMahasiswaController extends Controller
             ->get()
             ->keyBy('ID_KELAS_MASTER');
 
-        // 4. Batch-load student names (User.username stores NIM)
-        $nims  = $kelasMasterList->pluck('NIM')->filter()->unique()->values()->toArray();
-        $users = User::whereIn('username', $nims)->get()->keyBy('username');
+        // 4. Batch-load student names via their primary keys
+        $userIds = $kelasMasterList->pluck('NIM')->filter()->unique()->values()->toArray();
+        $users   = User::whereIn('id_user', $userIds)->get()->keyBy('id_user');
 
         // 5. Build the roster
         $roster = $kelasMasterList->map(function (KelasMaster $km) use ($presensiList, $users) {

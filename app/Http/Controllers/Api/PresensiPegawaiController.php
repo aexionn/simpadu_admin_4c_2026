@@ -33,14 +33,25 @@ class PresensiPegawaiController extends Controller
             return $request->input('NIP');
         }
 
-        // Mode 2: Fallback to authenticated user's NIP attribute
+        // Mode 2: Resolve NIP from external pegawai microservice
         $user = $request->user();
 
-        if ($user && isset($user->nip)) {
-            return $user->nip;
+        if ($user) {
+            try {
+                $pegawaiService = app(\App\Services\PegawaiClientService::class);
+
+                // Try by user ID first, fall back to email
+                $nip = $pegawaiService->getNipByUserId($user->getKey())
+                    ?? $pegawaiService->getNipByEmail($user->email);
+
+                if ($nip) {
+                    return $nip;
+                }
+            } catch (\Exception $e) {
+                // Service unavailable — fall through to explicit error
+            }
         }
 
-        // If we reach here, we cannot determine NIP.
         abort(422, 'NIP tidak dapat ditentukan. Kirimkan NIP dalam request body.');
     }
 

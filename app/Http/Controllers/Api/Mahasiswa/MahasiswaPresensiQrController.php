@@ -25,7 +25,7 @@ class MahasiswaPresensiQrController extends Controller
     public function submitQrAttendance(MahasiswaQrSubmitRequest $request): JsonResponse
     {
         $token  = $request->validated()['session_token'];
-        $nim    = $request->user()->username;   // NIM from JWT-authenticated mahasiswa
+        $nim    = (string) $request->user()->getKey();   // NIM from JWT-authenticated mahasiswa
         $now    = now();
 
         // ── Validate session ──────────────────────────────────────────────────
