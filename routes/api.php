@@ -86,7 +86,7 @@ Route::middleware('auth:jwt')->group(function () {
     Route::prefix('presensi-pegawai')->group(function () {
 
         // ── Employee self-service (pegawai role) ───────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,pegawai')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,pegawai,keuangan')->group(function () {
             // Custom attendance actions (concrete paths BEFORE {id})
             Route::post('/masuk',     [PresensiPegawaiController::class, 'masuk']);
             Route::post('/keluar',    [PresensiPegawaiController::class, 'keluar']);
