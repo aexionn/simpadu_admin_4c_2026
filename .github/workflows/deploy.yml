@@ -19,7 +19,7 @@ jobs:
             
             git stash
 
-            git pull origin master
+            git pull origin main
             
             docker compose exec -T php composer install --no-interaction --prefer-dist --optimize-autoloader
                         
