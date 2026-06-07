@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class proditoreRequest extends FormRequest
+class ProdiStoreRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 

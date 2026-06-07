@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class jurusantoreRequest extends FormRequest
+class JurusanStoreRequest extends FormRequest
 {
     public function authorize(): bool { return true; }
 
