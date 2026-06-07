@@ -13,7 +13,7 @@ return new class extends Migration
             $table->char('NIP', 20)->nullable();   
             $table->enum('STATUS_PRESENSI', ['H', 'I', 'S', 'A']);
             $table->time('WAKTU_MASUK');
-            $table->time('WAKTU_KELUAR');
+            $table->time('WAKTU_KELUAR')->nullable();
             $table->timestamp('TANGGAL');
             $table->text('KETERANGAN')->nullable();
             $table->index('NIP');

@@ -34,17 +34,17 @@ class PegawaiClientService
     {
         return $this->cachedOrFetch(
             "pegawai:nip_by_user:{$userId}",
-            fn () => $this->get("/pegawai/by-user/{$userId}"),
+            fn () => $this->get("/pegawai/{$userId}"),
         );
     }
 
-    public function getNipByEmail(string $email): ?string
-    {
-        return $this->cachedOrFetch(
-            "pegawai:nip_by_email:" . md5($email),
-            fn () => $this->get("/pegawai/by-email", ['email' => $email]),
-        );
-    }
+    // public function getNipByEmail(string $email): ?string
+    // {
+    //     return $this->cachedOrFetch(
+    //         "pegawai:nip_by_email:" . md5($email),
+    //         fn () => $this->get("/pegawai/by-email", ['email' => $email]),
+    //     );
+    // }
 
     public function getPegawai(int $id): ?array
     {

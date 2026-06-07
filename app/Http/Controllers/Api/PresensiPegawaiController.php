@@ -41,8 +41,7 @@ class PresensiPegawaiController extends Controller
                 $pegawaiService = app(\App\Services\PegawaiClientService::class);
 
                 // Try by user ID first, fall back to email
-                $nip = $pegawaiService->getNipByUserId($user->getKey())
-                    ?? $pegawaiService->getNipByEmail($user->email);
+                $nip = $pegawaiService->getNipByUserId($user->getKey()) ?? null;
 
                 if ($nip) {
                     return $nip;
@@ -171,9 +170,10 @@ class PresensiPegawaiController extends Controller
      */
     public function masuk(Request $request): JsonResponse
     {
-        $nip    = $this->resolveNip($request);
-        $today  = Carbon::today()->toDateString();
-        $now    = Carbon::now()->format('H:i:s');
+        $nip        = $this->resolveNip($request);
+        $validated  = $request->validate(['NIP' => 'nullable|string']);
+        $today      = Carbon::today()->toDateString();
+        $now        = Carbon::now()->format('H:i:s');
 
         $presensi = DB::transaction(function () use ($nip, $today, $now) {
             $existing = PresensiPegawai::where('NIP', $nip)
@@ -242,6 +242,7 @@ class PresensiPegawaiController extends Controller
     public function keluar(Request $request): JsonResponse
     {
         $nip   = $this->resolveNip($request);
+        $validated  = $request->validate(['NIP' => 'nullable|string']);
         $today = Carbon::today()->toDateString();
         $now   = Carbon::now()->format('H:i:s');
 
@@ -294,6 +295,7 @@ class PresensiPegawaiController extends Controller
     public function hariIni(Request $request): JsonResponse
     {
         $nip   = $this->resolveNip($request);
+        $validated  = $request->validate(['NIP' => 'nullable|string']);
         $today = Carbon::today()->toDateString();
 
         $presensi = PresensiPegawai::where('NIP', $nip)
@@ -324,6 +326,7 @@ class PresensiPegawaiController extends Controller
     public function rekap(Request $request): JsonResponse
     {
         $nip = $this->resolveNip($request);
+        $validated  = $request->validate(['NIP' => 'nullable|string']);
 
         // Admins can override NIP via query parameter to view others' history
         if ($this->isAdmin($request) && $request->filled('NIP')) {
@@ -338,11 +341,13 @@ class PresensiPegawaiController extends Controller
         }
 
         if ($request->filled('tanggal_mulai')) {
-            $query->whereDate('TANGGAL', '>=', $request->input('tanggal_mulai'));
+            $startDate = \Carbon\Carbon::parse($request->input('tanggal_mulai'))->startOfDay();
+            $query->where('TANGGAL', '>=', $startDate);
         }
 
-        if ($request->filled('tanggal_selesai')) {
-            $query->whereDate('TANGGAL', '<=', $request->input('tanggal_selesai'));
+        if ($request->filled('tanggal_selesai')) {    
+            $endDate = \Carbon\Carbon::parse($request->input('tanggal_selesai'))->endOfDay();
+            $query->where('TANGGAL', '<=', $endDate);
         }
 
         $data = $query->orderByDesc('TANGGAL')->get();

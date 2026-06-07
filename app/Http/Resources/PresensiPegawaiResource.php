@@ -17,8 +17,6 @@ class PresensiPegawaiResource extends JsonResource
             'waktu_keluar'    => $this->WAKTU_KELUAR,
             'tanggal'         => $this->TANGGAL?->toDateString(),
             'keterangan'      => $this->KETERANGAN,
-            'created_at'      => $this->created_at?->toDateTimeString(),
-            'updated_at'      => $this->updated_at?->toDateTimeString(),
         ];
     }
 }
