@@ -18,10 +18,12 @@ use App\Http\Controllers\Api\Akademik\PresensiMahasiswaController;
 use App\Http\Controllers\Api\Akademik\PresensiSesiController;
 use App\Http\Controllers\Api\DataMaster\HariController;
 use App\Http\Controllers\Api\DataMaster\JurusanController;
+use App\Http\Controllers\Api\DataMaster\KabupatenController;
 use App\Http\Controllers\Api\DataMaster\KurikulumController;
 use App\Http\Controllers\Api\DataMaster\MataKuliahController;
 use App\Http\Controllers\Api\DataMaster\ProdiController;
 use App\Http\Controllers\Api\DataMaster\ProgramKelasController;
+use App\Http\Controllers\Api\DataMaster\ProvinsiController;
 use App\Http\Controllers\Api\DataMaster\RuangController;
 use App\Http\Controllers\Api\DataMaster\TahunAkademikController;
 use Illuminate\Support\Facades\Route;
@@ -129,6 +131,10 @@ Route::middleware('auth:jwt')->group(function () {
             Route::get('tahun-akademik/{id}',        [TahunAkademikController::class, 'show']);
             Route::get('kurikulum',                  [KurikulumController::class, 'index']);
             Route::get('kurikulum/{id}',             [KurikulumController::class, 'show']);
+            Route::get('provinsi',                   [ProvinsiController::class, 'index']);
+            Route::get('provinsi/{id}',              [ProvinsiController::class, 'show']);
+            Route::get('kabupaten',                  [KabupatenController::class, 'index']);
+            Route::get('kabupaten/{id}',             [KabupatenController::class, 'show']);
         });
 
         // Write: super_admin + admin_akademik
@@ -157,6 +163,12 @@ Route::middleware('auth:jwt')->group(function () {
             Route::post('kurikulum',                 [KurikulumController::class, 'store']);
             Route::patch('kurikulum/{id}',           [KurikulumController::class, 'update']);
             Route::delete('kurikulum/{id}',          [KurikulumController::class, 'destroy']);
+            Route::post('provinsi',                  [ProvinsiController::class, 'store']);
+            Route::patch('provinsi/{id}',            [ProvinsiController::class, 'update']);
+            Route::delete('provinsi/{id}',           [ProvinsiController::class, 'destroy']);
+            Route::post('kabupaten',                 [KabupatenController::class, 'store']);
+            Route::patch('kabupaten/{id}',           [KabupatenController::class, 'update']);
+            Route::delete('kabupaten/{id}',          [KabupatenController::class, 'destroy']);
         });
     });
 
