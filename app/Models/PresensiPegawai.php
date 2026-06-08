@@ -13,7 +13,7 @@ class PresensiPegawai extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'id_user',
+        'ID_USER',
         'STATUS_PRESENSI',
         'WAKTU_MASUK',
         'WAKTU_KELUAR',
@@ -29,6 +29,6 @@ class PresensiPegawai extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'id_user', 'id_user');
+        return $this->belongsTo(User::class, 'ID_USER', 'id_user');
     }
 }

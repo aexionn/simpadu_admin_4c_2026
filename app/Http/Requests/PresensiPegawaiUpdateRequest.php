@@ -12,7 +12,7 @@ class PresensiPegawaiUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id_user'         => 'sometimes|integer|exists:users,id_user',
+            'ID_USER'         => 'sometimes|integer|exists:users,id_user',
             'STATUS_PRESENSI' => 'sometimes|in:H,I,S,A',
             'WAKTU_MASUK'     => 'nullable|date_format:H:i:s',
             'WAKTU_KELUAR'    => 'nullable|date_format:H:i:s|after:WAKTU_MASUK',

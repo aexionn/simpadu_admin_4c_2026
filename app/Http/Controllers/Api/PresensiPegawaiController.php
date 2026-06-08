@@ -112,7 +112,7 @@ class PresensiPegawaiController extends Controller
         $presensi = PresensiPegawai::findOrFail($id);
 
         // IDOR guard: non-admin can only view own records
-        if (!$this->isAdmin($request) && $presensi->ID_USER !== $request->user()->ID_USER) {
+        if (!$this->isAdmin($request) && $presensi->ID_USER !== $request->user()->id_user) {
             return $this->errorResponse('Anda tidak memiliki akses ke data ini.', 403);
         }
 
@@ -173,7 +173,7 @@ class PresensiPegawaiController extends Controller
      */
     public function masuk(Request $request): JsonResponse
     {
-    $userId = $this->getTargetUserId($request);
+        $userId = $this->getTargetUserId($request);
         $today  = Carbon::today()->toDateString();
         $now    = Carbon::now()->format('H:i:s');
 
@@ -334,11 +334,13 @@ class PresensiPegawaiController extends Controller
         }
 
         if ($request->filled('tanggal_mulai')) {
-            $query->whereDate('TANGGAL', '>=', $request->input('tanggal_mulai'));
+            $startDate = \Carbon\Carbon::parse($request->input('tanggal_mulai'))->startOfDay();
+            $query->where('TANGGAL', '>=', $startDate);
         }
 
         if ($request->filled('tanggal_selesai')) {
-            $query->whereDate('TANGGAL', '<=', $request->input('tanggal_selesai'));
+            $endDate = \Carbon\Carbon::parse($request->input('tanggal_selesai'))->endOfDay();
+            $query->where('TANGGAL', '<=', $endDate);
         }
 
         $data = $query->orderByDesc('TANGGAL')->get();
