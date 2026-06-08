@@ -14,48 +14,35 @@ use Illuminate\Support\Facades\DB;
 
 class PresensiPegawaiController extends Controller
 {
-    // Two modes:
-    //   1. Admin / Kiosk — sends `NIP` in the request body to act on behalf
-    //      of an employee.
-    //   2. Employee self-service — authenticated user's identity determines
-    //      their NIP. Falls back to `$user->nip` attribute if present.
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Identity Resolution
+    // ═══════════════════════════════════════════════════════════════════════════
     //
-    // NOTE: For employee self-service to work without explicitly sending NIP,
-    //       the `users` table should have a `nip` column, or a `Pegawai`
-    //       relationship should be established. If neither exists, the
-    //       employee MUST include their own NIP in the request body.
+    // All attendance operations are keyed by `id_user` (FK to users.id_user).
+    //
+    // Two modes:
+    //   - Employee self-service: authenticated user can only clock themselves.
+    //   - Admin override: super_admin / admin_akademik can pass `id_user` in
+    //     the request to act on behalf of another employee.
     // ═══════════════════════════════════════════════════════════════════════════
 
-    private function resolveNip(Request $request): string
+    /**
+     * Resolve the target user ID for attendance operations.
+     *
+     * Admins may override via request body/query `id_user`.
+     * Normal users are strictly locked to their own authenticated ID.
+     */
+    private function getTargetUserId(Request $request): int
     {
-        // Mode 1: Explicit NIP in request body (admin / kiosk / self-service)
-        if ($request->filled('NIP')) {
-            return $request->input('NIP');
+        if ($this->isAdmin($request) && $request->filled('id_user')) {
+            return (int) $request->input('id_user');
         }
 
-        // Mode 2: Resolve NIP from external pegawai microservice
-        $user = $request->user();
-
-        if ($user) {
-            try {
-                $pegawaiService = app(\App\Services\PegawaiClientService::class);
-
-                // Try by user ID first, fall back to email
-                $nip = $pegawaiService->getNipByUserId($user->getKey()) ?? null;
-
-                if ($nip) {
-                    return $nip;
-                }
-            } catch (\Exception $e) {
-                // Service unavailable — fall through to explicit error
-            }
-        }
-
-        abort(422, 'NIP tidak dapat ditentukan. Kirimkan NIP dalam request body.');
+        return (int) $request->user()->id_user;
     }
 
     /**
-     * Check if the authenticated user is an admin-type role.
+     * Check if the authenticated user has an admin-type role.
      */
     private function isAdmin(Request $request): bool
     {
@@ -67,23 +54,25 @@ class PresensiPegawaiController extends Controller
         return $user->hasRole('super_admin') || $user->hasRole('admin_akademik');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // CRUD
+    // ═══════════════════════════════════════════════════════════════════════════
+
     /**
-     * List all presensi records.
-     * - Admin: sees all records.
-     * - Pegawai: sees only own records (filtered by resolved NIP).
+     * List attendance records.
+     * - Admin: sees all, can filter by `id_user`.
+     * - Pegawai: sees only own records.
      */
     public function index(Request $request): JsonResponse
     {
         $query = PresensiPegawai::query()->orderByDesc('TANGGAL');
 
-        if (!$this->isAdmin($request)) {
-            // Non-admin users see only their own attendance
-            $query->where('NIP', $this->resolveNip($request));
-        } else {
-            // Admin can optionally filter by NIP
-            if ($request->filled('NIP')) {
-                $query->where('NIP', $request->input('NIP'));
+        if ($this->isAdmin($request)) {
+            if ($request->filled('id_user')) {
+                $query->where('id_user', (int) $request->input('id_user'));
             }
+        } else {
+            $query->where('id_user', $request->user()->id_user);
         }
 
         $data = $query->get();
@@ -95,7 +84,7 @@ class PresensiPegawaiController extends Controller
     }
 
     /**
-     * Create a manual attendance entry (e.g. Izin, Sakit, Alpha).
+     * Create a manual attendance entry (Izin, Sakit, Alpha, etc.).
      * Only accessible by admin roles.
      */
     public function store(PresensiPegawaiStoreRequest $request): JsonResponse
@@ -107,19 +96,28 @@ class PresensiPegawaiController extends Controller
         });
 
         return $this->successResponse(
-            new PresensiPegawaiResource($presensi),
+            new PresensiPegawaiResource($presensi->load('user')),
             'Presensi pegawai berhasil ditambahkan',
             201
         );
     }
 
     /**
-     * Show a single presensi record.
+     * Show a single attendance record.
+     *
+     * Non-admin users can only view their own records (IDOR protection).
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
+        $presensi = PresensiPegawai::findOrFail($id);
+
+        // IDOR guard: non-admin can only view own records
+        if (!$this->isAdmin($request) && $presensi->ID_USER !== $request->user()->ID_USER) {
+            return $this->errorResponse('Anda tidak memiliki akses ke data ini.', 403);
+        }
+
         return $this->successResponse(
-            new PresensiPegawaiResource(PresensiPegawai::findOrFail($id)),
+            new PresensiPegawaiResource($presensi->load('user')),
             'Detail presensi pegawai berhasil diambil'
         );
     }
@@ -130,7 +128,7 @@ class PresensiPegawaiController extends Controller
      */
     public function update(PresensiPegawaiUpdateRequest $request, int $id): JsonResponse
     {
-        $presensi = PresensiPegawai::findOrFail($id);
+        $presensi  = PresensiPegawai::findOrFail($id);
         $validated = $request->validated();
 
         DB::transaction(function () use ($presensi, $validated) {
@@ -138,7 +136,7 @@ class PresensiPegawaiController extends Controller
         });
 
         return $this->successResponse(
-            new PresensiPegawaiResource($presensi->fresh()),
+            new PresensiPegawaiResource($presensi->fresh()->load('user')),
             'Presensi pegawai berhasil diperbarui'
         );
     }
@@ -158,32 +156,34 @@ class PresensiPegawaiController extends Controller
         return $this->successMessage('Presensi pegawai berhasil dihapus');
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Custom Attendance Actions
+    // ═══════════════════════════════════════════════════════════════════════════
+
     /**
      * Clock-in (Masuk).
      *
+     * - Derives `id_user` from the authenticated token (or admin override).
      * - Automatically sets TANGGAL = today, WAKTU_MASUK = current server time.
      * - Defaults STATUS_PRESENSI to 'H' (Hadir).
-     * - If a record already exists for this NIP + today, update it to 'H'
-     *   and set WAKTU_MASUK (handles case where an Izin/Sakit record was
-     *   created manually earlier in the day but the employee showed up).
+     * - If a record already exists for this user + today, upgrades it to
+     *   Hadir with the current time (handles the case where an Izin/Sakit
+     *   record was created manually earlier but the employee showed up).
      * - Returns 409 if WAKTU_MASUK is already filled for today.
      */
     public function masuk(Request $request): JsonResponse
     {
-        $nip        = $this->resolveNip($request);
-        $validated  = $request->validate(['NIP' => 'nullable|string']);
-        $today      = Carbon::today()->toDateString();
-        $now        = Carbon::now()->format('H:i:s');
+    $userId = $this->getTargetUserId($request);
+        $today  = Carbon::today()->toDateString();
+        $now    = Carbon::now()->format('H:i:s');
 
-        $presensi = DB::transaction(function () use ($nip, $today, $now) {
-            $existing = PresensiPegawai::where('NIP', $nip)
+        $presensi = DB::transaction(function () use ($userId, $today, $now) {
+            $existing = PresensiPegawai::where('ID_USER', $userId)
                 ->whereDate('TANGGAL', $today)
                 ->first();
 
             if ($existing) {
-                // Already clocked in today
                 if ($existing->WAKTU_MASUK) {
-                    // Return conflict — don't overwrite an existing clock-in time
                     return [
                         'status'  => 409,
                         'message' => 'Sudah presensi masuk hari ini',
@@ -191,8 +191,8 @@ class PresensiPegawaiController extends Controller
                     ];
                 }
 
-                // Record exists (e.g. created manually as Izin/Sakit/Alpha)
-                // but employee showed up — upgrade to Hadir with clock-in time
+                // Existing record without clock-in time (e.g. manual Izin/Sakit)
+                // — upgrade to Hadir and record the entry time
                 $existing->update([
                     'STATUS_PRESENSI' => 'H',
                     'WAKTU_MASUK'     => $now,
@@ -205,9 +205,9 @@ class PresensiPegawaiController extends Controller
                 ];
             }
 
-            // Fresh clock-in record
+            // Fresh clock-in
             $created = PresensiPegawai::create([
-                'NIP'             => $nip,
+                'ID_USER'         => $userId,
                 'STATUS_PRESENSI' => 'H',
                 'WAKTU_MASUK'     => $now,
                 'TANGGAL'         => $today,
@@ -225,7 +225,7 @@ class PresensiPegawaiController extends Controller
         }
 
         return $this->successResponse(
-            new PresensiPegawaiResource($presensi['data']),
+            new PresensiPegawaiResource($presensi['data']->load('user')),
             $presensi['message'],
             $presensi['status']
         );
@@ -235,19 +235,17 @@ class PresensiPegawaiController extends Controller
      * Clock-out (Keluar).
      *
      * - Automatically sets WAKTU_KELUAR = current server time.
-     * - Requires an existing record for this NIP + today with WAKTU_MASUK filled.
-     * - Returns 409 if already clocked out today.
-     * - Returns 404 if no clock-in record exists for today.
+     * - Requires an existing record for this user + today with WAKTU_MASUK set.
+     * - Returns 409 if already clocked out, 404 if no clock-in today.
      */
     public function keluar(Request $request): JsonResponse
     {
-        $nip   = $this->resolveNip($request);
-        $validated  = $request->validate(['NIP' => 'nullable|string']);
-        $today = Carbon::today()->toDateString();
-        $now   = Carbon::now()->format('H:i:s');
+        $userId = $this->getTargetUserId($request);
+        $today  = Carbon::today()->toDateString();
+        $now    = Carbon::now()->format('H:i:s');
 
-        $result = DB::transaction(function () use ($nip, $today, $now) {
-            $presensi = PresensiPegawai::where('NIP', $nip)
+        $result = DB::transaction(function () use ($userId, $today, $now) {
+            $presensi = PresensiPegawai::where('id_user', $userId)
                 ->whereDate('TANGGAL', $today)
                 ->first();
 
@@ -284,21 +282,20 @@ class PresensiPegawaiController extends Controller
         }
 
         return $this->successResponse(
-            new PresensiPegawaiResource($result['data']),
+            new PresensiPegawaiResource($result['data']->load('user')),
             $result['message']
         );
     }
 
     /**
-     * Get today's attendance record for the resolved NIP.
+     * Get today's attendance record for the resolved user.
      */
     public function hariIni(Request $request): JsonResponse
     {
-        $nip   = $this->resolveNip($request);
-        $validated  = $request->validate(['NIP' => 'nullable|string']);
-        $today = Carbon::today()->toDateString();
+        $userId = $this->getTargetUserId($request);
+        $today  = Carbon::today()->toDateString();
 
-        $presensi = PresensiPegawai::where('NIP', $nip)
+        $presensi = PresensiPegawai::where('id_user', $userId)
             ->whereDate('TANGGAL', $today)
             ->first();
 
@@ -307,7 +304,7 @@ class PresensiPegawaiController extends Controller
         }
 
         return $this->successResponse(
-            new PresensiPegawaiResource($presensi),
+            new PresensiPegawaiResource($presensi->load('user')),
             'Presensi hari ini berhasil diambil'
         );
     }
@@ -315,39 +312,33 @@ class PresensiPegawaiController extends Controller
     /**
      * Recap / attendance history.
      *
-     * - Non-admin: automatically scoped to own NIP.
-     * - Admin: can optionally pass `NIP` query param to view another employee.
+     * - Non-admin: strictly scoped to own `id_user`.
+     * - Admin: can optionally pass `?id_user=X` to view another employee.
      *
-     * Filters (all optional):
-     *   - bulan          (int, 1-12)  — filter by month
-     *   - tanggal_mulai  (Y-m-d)      — start date (inclusive)
-     *   - tanggal_selesai (Y-m-d)     — end date (inclusive)
+     * Filters (all optional query params):
+     *   - id_user         (int)      — admin override target user
+     *   - bulan           (int 1-12) — filter by month
+     *   - tanggal_mulai   (Y-m-d)    — start date (inclusive)
+     *   - tanggal_selesai (Y-m-d)    — end date (inclusive)
      */
     public function rekap(Request $request): JsonResponse
     {
-        $nip = $this->resolveNip($request);
-        $validated  = $request->validate(['NIP' => 'nullable|string']);
+        $userId = $this->isAdmin($request) && $request->filled('id_user')
+            ? (int) $request->input('id_user')
+            : $request->user()->id_user;
 
-        // Admins can override NIP via query parameter to view others' history
-        if ($this->isAdmin($request) && $request->filled('NIP')) {
-            $nip = $request->input('NIP');
-        }
+        $query = PresensiPegawai::where('id_user', $userId);
 
-        $query = PresensiPegawai::where('NIP', $nip);
-
-        // Optional filters
         if ($request->filled('bulan')) {
             $query->whereMonth('TANGGAL', $request->integer('bulan'));
         }
 
         if ($request->filled('tanggal_mulai')) {
-            $startDate = \Carbon\Carbon::parse($request->input('tanggal_mulai'))->startOfDay();
-            $query->where('TANGGAL', '>=', $startDate);
+            $query->whereDate('TANGGAL', '>=', $request->input('tanggal_mulai'));
         }
 
-        if ($request->filled('tanggal_selesai')) {    
-            $endDate = \Carbon\Carbon::parse($request->input('tanggal_selesai'))->endOfDay();
-            $query->where('TANGGAL', '<=', $endDate);
+        if ($request->filled('tanggal_selesai')) {
+            $query->whereDate('TANGGAL', '<=', $request->input('tanggal_selesai'));
         }
 
         $data = $query->orderByDesc('TANGGAL')->get();

@@ -11,7 +11,8 @@ class PresensiPegawaiResource extends JsonResource
     {
         return [
             'id_presensi'     => $this->ID_PRESENSI,
-            'nip'             => $this->NIP,
+            'id_user'         => $this->id_user,
+            'nama_pegawai'    => $this->whenLoaded('user', fn () => $this->user->name),
             'status_presensi' => $this->STATUS_PRESENSI,
             'waktu_masuk'     => $this->WAKTU_MASUK,
             'waktu_keluar'    => $this->WAKTU_KELUAR,

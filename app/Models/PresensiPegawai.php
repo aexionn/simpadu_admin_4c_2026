@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PresensiPegawai extends Model
 {
@@ -12,7 +13,7 @@ class PresensiPegawai extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'NIP',
+        'id_user',
         'STATUS_PRESENSI',
         'WAKTU_MASUK',
         'WAKTU_KELUAR',
@@ -21,8 +22,13 @@ class PresensiPegawai extends Model
     ];
 
     protected $casts = [
-        'WAKTU_MASUK' => 'datetime:H:i:s',
+        'WAKTU_MASUK'  => 'datetime:H:i:s',
         'WAKTU_KELUAR' => 'datetime:H:i:s',
-        'TANGGAL' => 'date',
+        'TANGGAL'      => 'date',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_user', 'id_user');
+    }
 }

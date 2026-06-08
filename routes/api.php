@@ -86,7 +86,7 @@ Route::middleware('auth:jwt')->group(function () {
     Route::prefix('presensi-pegawai')->group(function () {
 
         // ── Employee self-service (pegawai role) ───────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,pegawai,keuangan')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,admin_pegawai,pegawai,dosen,admin_mahasiswa,keuangan')->group(function () {
             // Custom attendance actions (concrete paths BEFORE {id})
             Route::post('/masuk',     [PresensiPegawaiController::class, 'masuk']);
             Route::post('/keluar',    [PresensiPegawaiController::class, 'keluar']);
@@ -102,7 +102,7 @@ Route::middleware('auth:jwt')->group(function () {
         Route::middleware('role:super_admin,admin_akademik')->group(function () {
             Route::post('/',         [PresensiPegawaiController::class, 'store']);
             Route::patch('/{id}',    [PresensiPegawaiController::class, 'update']);
-            Route::delete('/{id}',   [PresensiPegawaiController::class, 'destroy']);
+        Route::delete('/{id}',   [PresensiPegawaiController::class, 'destroy']);
         });
     });
 
@@ -227,11 +227,11 @@ Route::middleware('auth:jwt')->group(function () {
             Route::patch('prodi-dosen/{id}',        [ProdiDosenController::class, 'update']);
             Route::delete('prodi-dosen/{id}',       [ProdiDosenController::class, 'destroy']);
             // Presensi Mahasiswa — admin correction only (with audit log)
-            Route::patch('presensi-mahasiswa/{id}', [PresensiMahasiswaController::class, 'update']);
-        });
-
-        // ── Presensi (dosen access) ────────────────────────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai')->group(function () {
+            });
+            
+            // ── Presensi (dosen access) ────────────────────────────────────────────
+        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai')->group(function () {
+            Route::patch('presensi-mahasiswa/{id}',      [PresensiMahasiswaController::class, 'update']);
             // Class roster for manual roll-call
             Route::get('presensi-mahasiswa/roster',      [PresensiMahasiswaController::class, 'getRoster']);
             // QR Session management
