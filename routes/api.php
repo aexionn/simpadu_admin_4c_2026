@@ -128,6 +128,7 @@ Route::middleware('auth:jwt')->group(function () {
             Route::get('mata-kuliah',                [MataKuliahController::class, 'index']);
             Route::get('mata-kuliah/{id}',           [MataKuliahController::class, 'show']);
             Route::get('tahun-akademik',             [TahunAkademikController::class, 'index']);
+            Route::get('tahun-akademik/active',      [TahunAkademikController::class, 'active']);
             Route::get('tahun-akademik/{id}',        [TahunAkademikController::class, 'show']);
             Route::get('kurikulum',                  [KurikulumController::class, 'index']);
             Route::get('kurikulum/{id}',             [KurikulumController::class, 'show']);
