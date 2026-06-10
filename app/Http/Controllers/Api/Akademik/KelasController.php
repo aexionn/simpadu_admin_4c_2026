@@ -7,6 +7,7 @@ use App\Http\Requests\KelasStoreRequest;
 use App\Http\Requests\KelasUpdateRequest;
 use App\Http\Resources\KelasResource;
 use App\Models\Kelas;
+use App\Models\TahunAkademik;
 use App\Services\ProdiClientService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,10 @@ class KelasController extends Controller
 {
     public function index(): JsonResponse
     {
-        $data = Kelas::with('programKelas')->orderByDesc('ID_KELAS')->get();
+        $data = Kelas::with(['programKelas', 'tahunAkademik'])
+            ->orderByDesc('ID_KELAS')
+            ->get();
+
         return $this->successCollection(
             KelasResource::collection($data),
             'Data kelas berhasil diambil'
@@ -35,10 +39,18 @@ class KelasController extends Controller
             return $this->errorResponse('Gagal menghubungi layanan prodi' . $e->getMessage(), 503);
         }
 
+        $tahunAkademik = TahunAkademik::where('AKTIF', 'Y')->first();
+
+        if (! $tahunAkademik) {
+            return $this->errorResponse('Tahun akademik aktif tidak ditemukan', 422);
+        }
+
+        $validated['ID_TAHUN_AKADEMIK'] = $tahunAkademik->ID_TAHUN_AKADEMIK;
+
         $kelas = DB::transaction(fn () => Kelas::create($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->load('programKelas')),
+            new KelasResource($kelas->load(['programKelas', 'tahunAkademik'])),
             'Kelas berhasil ditambahkan',
             201
         );
@@ -46,7 +58,7 @@ class KelasController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $kelas = Kelas::with('programKelas')
+        $kelas = Kelas::with(['programKelas', 'tahunAkademik'])
             ->findOrFail($id);
 
         return $this->successResponse(
@@ -74,7 +86,7 @@ class KelasController extends Controller
         DB::transaction(fn () => $kelas->update($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->fresh()->load('programKelas')),
+            new KelasResource($kelas->fresh()->load(['programKelas', 'tahunAkademik'])),
             'Kelas berhasil diperbarui'
         );
     }

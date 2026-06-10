@@ -24,6 +24,11 @@ class Kelas extends Model
         return $this->belongsTo(ProgramKelas::class, 'ID_PROGRAM', 'ID_PROGRAM');
     }
 
+    public function tahunAkademik()
+    {
+        return $this->belongsTo(TahunAkademik::class, 'ID_TAHUN_AKADEMIK', 'ID_TAHUN_AKADEMIK');
+    }
+
     public function kelasMasters()
     {
         return $this->hasMany(KelasMaster::class, 'ID_KELAS', 'ID_KELAS');
