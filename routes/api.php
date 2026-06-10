@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Mahasiswa\MahasiswaPresensiQrController;
+use App\Http\Controllers\Api\Mahasiswa\MahasiswaPresensiController;
 use App\Http\Controllers\Api\PresensiPegawaiController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RoleController;
@@ -79,7 +79,8 @@ Route::middleware('auth:jwt')->group(function () {
     // ── Mahasiswa ──────────────────────────────────────────────────────────────
     // ═══════════════════════════════════════════════════════════════════════════
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
-        Route::post('presensi/scan-qr', [MahasiswaPresensiQrController::class, 'submitQrAttendance']);
+        Route::get('presensi/available', [MahasiswaPresensiController::class, 'available']);
+        Route::post('presensi/submit',   [MahasiswaPresensiController::class, 'submit']);
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -178,6 +179,16 @@ Route::middleware('auth:jwt')->group(function () {
     // ═══════════════════════════════════════════════════════════════════════════
     Route::prefix('akademik')->group(function () {
 
+        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai')->group(function () {
+            Route::get('presensi-mahasiswa/roster',      [PresensiMahasiswaController::class, 'getRoster']);
+            Route::post('presensi-mahasiswa/batch-roll-call', [PresensiMahasiswaController::class, 'submitBatchRollCall']);
+        });
+
+        Route::middleware('role:super_admin,admin_akademik,dosen')->group(function () {
+            Route::post('presensi-mahasiswa/session/open',       [PresensiSesiController::class, 'openSession']);
+            Route::post('presensi-mahasiswa/session/{id}/close', [PresensiSesiController::class, 'closeSession']);
+        });
+
         // ── Read: all roles ────────────────────────────────────────────────────
         Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
             // Kelas
@@ -245,13 +256,6 @@ Route::middleware('auth:jwt')->group(function () {
             // ── Presensi (dosen access) ────────────────────────────────────────────
         Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai')->group(function () {
             Route::patch('presensi-mahasiswa/{id}',      [PresensiMahasiswaController::class, 'update']);
-            // Class roster for manual roll-call
-            Route::get('presensi-mahasiswa/roster',      [PresensiMahasiswaController::class, 'getRoster']);
-            // QR Session management
-            Route::post('presensi-sesi/generate',        [PresensiSesiController::class, 'generateSession']);
-            Route::post('presensi-sesi/{id}/close',      [PresensiSesiController::class, 'closeSession']);
-            // Manual roll-call batch
-            Route::post('presensi-mahasiswa/batch-roll-call', [PresensiMahasiswaController::class, 'submitBatchRollCall']);
         });
 
         // ── Nested: Kurikulum ↔ Mata Kuliah ────────────────────────────────────

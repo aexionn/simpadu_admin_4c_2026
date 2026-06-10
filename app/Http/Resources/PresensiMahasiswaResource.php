@@ -17,14 +17,11 @@ class PresensiMahasiswaResource extends JsonResource
             'nim'              => $this->NIM,
             'waktu_presensi'   => $this->WAKTU_PRESENSI?->toDateTimeString(),
             'pertemuan_ke'     => $this->PERTEMUAN_KE,
-            'barcode_data'     => $this->BARCODE_DATA,
             'status_presensi'  => $this->STATUS_PRESENSI,
             'metode'           => $this->METODE,
-            // 'kelas_master'     => new KelasMasterResource($this->whenLoaded('kelasMaster')),
-            // 'kelas_mk'         => new KelasMkResource($this->whenLoaded('kelasMk')),
-            // 'presensi_sesi'    => new PresensiSesiResource($this->whenLoaded('presensiSesi')),
-            'created_at'       => $this->created_at?->toDateTimeString(),
-            'updated_at'       => $this->updated_at?->toDateTimeString(),
+            'kelas_master'     => new KelasMasterResource($this->whenLoaded('kelasMaster')),
+            'kelas_mk'         => new KelasMkResource($this->whenLoaded('kelasMk')),
+            'presensi_sesi'    => new PresensiSesiResource($this->whenLoaded('presensiSesi')),
         ];
     }
 }

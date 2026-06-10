@@ -18,7 +18,6 @@ class PresensiMahasiswaBatchStoreRequest extends FormRequest
             'presensi.*.id_kelas_mk'      => 'required|integer|exists:kelas_mk,ID_KELAS_MK',
             'presensi.*.pertemuan_ke'     => 'required|integer|min:1',
             'presensi.*.status_presensi'  => 'required|in:H,I,S,A',
-            'presensi.*.metode'           => 'required|in:Manual',
         ];
     }
 

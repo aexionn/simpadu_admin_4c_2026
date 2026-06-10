@@ -157,14 +157,12 @@ class PresensiMahasiswaController extends Controller
                 'STATUS_PRESENSI' => $r['status_presensi'],
                 'METODE'          => 'Manual',
                 'WAKTU_PRESENSI'  => $now,
-                'created_at'      => $now,
-                'updated_at'      => $now,
             ], $rows);
 
             PresensiMahasiswa::upsert(
                 $payload,
                 ['ID_KELAS_MASTER', 'ID_KELAS_MK', 'PERTEMUAN_KE'],
-                ['STATUS_PRESENSI', 'METODE', 'WAKTU_PRESENSI', 'updated_at']
+                ['STATUS_PRESENSI', 'METODE', 'WAKTU_PRESENSI']
             );
         });
 

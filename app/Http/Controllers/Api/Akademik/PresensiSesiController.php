@@ -3,56 +3,53 @@
 namespace App\Http\Controllers\Api\Akademik;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\PresensiSesiGenerateRequest;
-use App\Models\KelasMk;
-use App\Models\PresensiSesi;
+use App\Http\Requests\PresensiSesiOpenRequest;
 use App\Http\Resources\PresensiSesiResource;
+use App\Models\KelasMk;
+use App\Models\LogAktivitas;
+use App\Models\PresensiSesi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PresensiSesiController extends Controller
 {
-    /**
-     * Generate a new dynamic QR attendance session.
-     *
-     * Creates a time-bound, cryptographically secure token
-     * that students scan to submit attendance.
-     */
-    public function generateSession(PresensiSesiGenerateRequest $request): JsonResponse
+    public function openSession(PresensiSesiOpenRequest $request): JsonResponse
     {
         $validated   = $request->validated();
         $idKelasMk   = (int) $validated['ID_KELAS_MK'];
         $pertemuanKe = (int) $validated['PERTEMUAN_KE'];
         $durationMin = (int) ($validated['duration_minutes'] ?? 15);
 
-        // Verify the schedule exists
         KelasMk::findOrFail($idKelasMk);
 
-        // Close any previous active session for the same schedule+meeting
-        PresensiSesi::where('ID_KELAS_MK', $idKelasMk)
-            ->where('PERTEMUAN_KE', $pertemuanKe)
-            ->where('is_active', true)
-            ->update(['is_active' => false]);
+        $sesi = DB::transaction(function () use ($idKelasMk, $pertemuanKe, $durationMin) {
+            PresensiSesi::where('ID_KELAS_MK', $idKelasMk)
+                ->where('is_active', true)
+                ->update(['is_active' => false]);
 
-        $sesi = DB::transaction(fn () => PresensiSesi::create([
-            'ID_KELAS_MK'   => $idKelasMk,
-            'PERTEMUAN_KE'  => $pertemuanKe,
-            'session_token' => Str::random(64),
-            'expires_at'    => now()->addMinutes($durationMin),
-            'is_active'     => true,
-        ]));
+            $sesi = PresensiSesi::create([
+                'ID_KELAS_MK' => $idKelasMk,
+                'PERTEMUAN_KE' => $pertemuanKe,
+                'expires_at' => now()->addMinutes($durationMin),
+                'is_active' => true,
+            ]);
+
+            LogAktivitas::create([
+                'TIPE_AKTIVITAS' => 'OPEN_PRESENSI_SESSION',
+                'PESAN' => "Sesi presensi mahasiswa dibuka untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
+                'ENTITAS_TERKAIT' => 'presensi_sesi:' . $sesi->ID_SESI,
+            ]);
+
+            return $sesi;
+        });
 
         return $this->successResponse(
             new PresensiSesiResource($sesi->load('kelasMk')),
-            'Sesi presensi berhasil dibuat.',
+            'Sesi presensi mahasiswa berhasil dibuka.',
             201
         );
     }
 
-    /**
-     * Close (deactivate) an active QR session.
-     */
     public function closeSession(int $id): JsonResponse
     {
         $sesi = PresensiSesi::findOrFail($id);
@@ -61,7 +58,15 @@ class PresensiSesiController extends Controller
             return $this->successMessage('Sesi sudah ditutup sebelumnya.');
         }
 
-        DB::transaction(fn () => $sesi->update(['is_active' => false]));
+        DB::transaction(function () use ($sesi) {
+            $sesi->update(['is_active' => false]);
+
+            LogAktivitas::create([
+                'TIPE_AKTIVITAS' => 'CLOSE_PRESENSI_SESSION',
+                'PESAN' => "Sesi presensi mahasiswa ditutup untuk ID_SESI {$sesi->ID_SESI}.",
+                'ENTITAS_TERKAIT' => 'presensi_sesi:' . $sesi->ID_SESI,
+            ]);
+        });
 
         return $this->successMessage('Sesi presensi berhasil ditutup.');
     }

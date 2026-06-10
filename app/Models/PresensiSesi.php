@@ -14,7 +14,6 @@ class PresensiSesi extends Model
     protected $fillable = [
         'ID_KELAS_MK',
         'PERTEMUAN_KE',
-        'session_token',
         'expires_at',
         'is_active',
     ];
@@ -36,6 +35,6 @@ class PresensiSesi extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        return $this->expires_at?->isPast() ?? true;
     }
 }

@@ -18,7 +18,6 @@ class PresensiMahasiswa extends Model
         'NIM',
         'WAKTU_PRESENSI',
         'PERTEMUAN_KE',
-        'BARCODE_DATA',
         'STATUS_PRESENSI',
         'METODE',
     ];

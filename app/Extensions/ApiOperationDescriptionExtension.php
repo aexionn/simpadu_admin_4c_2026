@@ -46,6 +46,42 @@ class ApiOperationDescriptionExtension extends OperationExtension
             'summary' => 'Delete a class',
             'description' => 'Deletes a class record by ID.',
         ],
+        'GET api/mahasiswa/presensi/available' => [
+            'summary' => 'Display available student attendance sessions',
+            'description' => 'Returns currently active attendance sessions that can be accessed by authenticated users with the mahasiswa role.',
+        ],
+        'POST api/mahasiswa/presensi/submit' => [
+            'summary' => 'Submit student attendance',
+            'description' => 'Allows an authenticated mahasiswa user to submit attendance for an active class meeting session. The backend records the attendance as Hadir with Manual method while the session is open.',
+        ],
+        'POST api/akademik/presensi-mahasiswa/session/open' => [
+            'summary' => 'Open a student attendance session',
+            'description' => 'Opens a student attendance session for a class meeting. Only super admins, academic admins, and dosen users can open sessions.',
+        ],
+        'POST api/akademik/presensi-mahasiswa/session/{id}/close' => [
+            'summary' => 'Close a student attendance session',
+            'description' => 'Closes an active student attendance session so students can no longer submit attendance for that session.',
+        ],
+        'GET api/akademik/presensi-mahasiswa' => [
+            'summary' => 'Display all student attendance records',
+            'description' => 'Returns a list of student attendance records.',
+        ],
+        'GET api/akademik/presensi-mahasiswa/roster' => [
+            'summary' => 'Display class roster with attendance status',
+            'description' => 'Returns the class roster for a specific class schedule and meeting, including the current attendance status for each student.',
+        ],
+        'POST api/akademik/presensi-mahasiswa/batch-roll-call' => [
+            'summary' => 'Submit batch manual roll-call attendance',
+            'description' => 'Creates or updates multiple student attendance records for a class meeting using manual roll call.',
+        ],
+        'GET api/akademik/presensi-mahasiswa/{id}' => [
+            'summary' => 'Display a specific student attendance record',
+            'description' => 'Returns the detail of one student attendance record by ID.',
+        ],
+        'PATCH api/akademik/presensi-mahasiswa/{id}' => [
+            'summary' => 'Update a student attendance record',
+            'description' => 'Updates a student attendance record for correction by authorized staff.',
+        ],
     ];
 
     private array $entityNames = [
@@ -57,7 +93,6 @@ class ApiOperationDescriptionExtension extends OperationExtension
         'profile' => ['profile', 'profiles'],
         'presensi-pegawai' => ['employee attendance record', 'employee attendance records'],
         'presensi-mahasiswa' => ['student attendance record', 'student attendance records'],
-        'presensi-sesi' => ['attendance session', 'attendance sessions'],
         'hari' => ['day', 'days'],
         'ruang' => ['room', 'rooms'],
         'jurusan' => ['department', 'departments'],
@@ -76,7 +111,6 @@ class ApiOperationDescriptionExtension extends OperationExtension
         'nilai' => ['grade', 'grades'],
         'prodi-dosen' => ['lecturer study program assignment', 'lecturer study program assignments'],
         'kurikulum-mata-kuliah' => ['curriculum course', 'curriculum courses'],
-        'mahasiswa-presensi-qr' => ['student QR attendance', 'student QR attendance records'],
     ];
 
     private array $ignoredUriSegments = [
@@ -103,7 +137,6 @@ class ApiOperationDescriptionExtension extends OperationExtension
         'hari-ini',
         'rekap',
         'change-password',
-        'scan-qr',
         'mata-kuliah',
         'generate',
         'close',
