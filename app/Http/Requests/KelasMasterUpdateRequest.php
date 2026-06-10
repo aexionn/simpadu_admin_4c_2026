@@ -16,7 +16,7 @@ class KelasMasterUpdateRequest extends FormRequest
             'ID_KELAS'          => 'sometimes|integer|exists:kelas,ID_KELAS',
             'NIM'               => 'sometimes|string|size:11',
             'ID_TAHUN_AKADEMIK' => 'sometimes|integer|exists:tahun_akademik,ID_TAHUN_AKADEMIK',
-            'ID_STATUS_MHS'     => 'nullable|integer',
+            'STATUS_MHS'     => 'nullable|integer',
         ];
     }
 }
