@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Extensions\ApiOperationDescriptionExtension;
 use App\Extensions\ApiResponseEnvelopeExtension;
 use Illuminate\Support\ServiceProvider;
 use Dedoc\Scramble\Scramble;
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // ── Global API response envelope ──────────────────────────────────────
         Scramble::registerExtension(ApiResponseEnvelopeExtension::class);
+        Scramble::configure()->withOperationTransformers(ApiOperationDescriptionExtension::class);
 
         // ── JWT bearer security scheme ────────────────────────────────────────
         Scramble::configure()
