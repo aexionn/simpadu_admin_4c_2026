@@ -24,8 +24,8 @@ class KelasMk extends Model
     ];
 
     protected $casts = [
-        'WAKTU_MULAI' => 'time',
-        'WAKTU_AKHIR' => 'time',
+        'WAKTU_MULAI' => 'datetime:H:i:s',
+        'WAKTU_AKHIR' => 'datetime:H:i:s',
     ];
 
     public function kelas()
