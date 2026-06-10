@@ -9,6 +9,7 @@ class KelasMk extends Model
     protected $table = 'kelas_mk';
     protected $primaryKey = 'ID_KELAS_MK';
     public $incrementing = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'ID_KELAS',
@@ -23,8 +24,8 @@ class KelasMk extends Model
     ];
 
     protected $casts = [
-        'WAKTU_MULAI' => 'datetime',
-        'WAKTU_AKHIR' => 'datetime',
+        'WAKTU_MULAI' => 'time',
+        'WAKTU_AKHIR' => 'time',
     ];
 
     public function kelas()
