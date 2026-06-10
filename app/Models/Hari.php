@@ -12,6 +12,6 @@ class Hari extends Model
     public $timestamps    = false;
 
     protected $fillable = [
-        'NAMA_HARI',
+        'nama_hari',
     ];
 }

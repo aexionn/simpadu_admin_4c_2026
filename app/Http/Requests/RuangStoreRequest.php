@@ -12,7 +12,7 @@ class RuangStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'NAMA_RUANG' => 'required|string|max:40|unique:ruang,NAMA_RUANG',
+            'nama_ruang' => 'required|string|max:40|unique:ruang,nama_ruang',
         ];
     }
 }

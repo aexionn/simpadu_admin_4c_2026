@@ -11,7 +11,7 @@ class HariResource extends JsonResource
     {
         return [
             'id_hari'   => $this->id_hari,
-            'nama_hari' => $this->NAMA_HARI,
+            'nama_hari' => $this->nama_hari,
         ];
     }
 }
