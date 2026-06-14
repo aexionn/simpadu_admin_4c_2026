@@ -4,33 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Nilai extends Model
+class SettingNilai extends Model
 {
-    protected $table = 'nilai';
+    protected $table = 'setting_nilai';
     protected $primaryKey = 'id';
     public $incrementing = true;
 
     protected $fillable = [
         'id_dosen',
-        'nim',
         'id_kelas',
         'id_mk',
-        'participation_score',
-        'assignment_score',
-        'quiz_score',
-        'uts_score',
-        'uas_score',
-        'final_score',
-        'grade',
+        'participation',
+        'assignment',
+        'quiz',
+        'uts',
+        'uas',
     ];
 
     protected $casts = [
-        'participation_score' => 'decimal:2',
-        'assignment_score' => 'decimal:2',
-        'quiz_score' => 'decimal:2',
-        'uts_score' => 'decimal:2',
-        'uas_score' => 'decimal:2',
-        'final_score' => 'decimal:2',
+        'participation' => 'decimal:2',
+        'assignment' => 'decimal:2',
+        'quiz' => 'decimal:2',
+        'uts' => 'decimal:2',
+        'uas' => 'decimal:2',
     ];
 
     public function mataKuliah()

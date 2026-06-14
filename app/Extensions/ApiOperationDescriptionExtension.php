@@ -82,6 +82,34 @@ class ApiOperationDescriptionExtension extends OperationExtension
             'summary' => 'Update a student attendance record',
             'description' => 'Updates a student attendance record for correction by authorized staff.',
         ],
+        'GET api/akademik/nilai' => [
+            'summary' => 'Display grade records',
+            'description' => 'Returns grade records with optional filters for lecturer, class, course, and student NIM.',
+        ],
+        'POST api/akademik/nilai' => [
+            'summary' => 'Create a grade record',
+            'description' => 'Creates a new grade record and automatically calculates final score and letter grade using the configured grade weights.',
+        ],
+        'POST api/akademik/nilai/batch' => [
+            'summary' => 'Create grade records in batch',
+            'description' => 'Creates multiple grade records for one class and course. Each final score and letter grade is calculated automatically.',
+        ],
+        'PATCH api/akademik/nilai/{id}' => [
+            'summary' => 'Update a grade record',
+            'description' => 'Updates a grade record and recalculates final score and letter grade.',
+        ],
+        'GET api/akademik/setting-nilai' => [
+            'summary' => 'Display grade weight settings',
+            'description' => 'Returns grade weight settings with optional filters for lecturer, class, and course.',
+        ],
+        'POST api/akademik/setting-nilai' => [
+            'summary' => 'Create grade weight settings',
+            'description' => 'Creates grade weight settings for a lecturer, class, and course. The total weight must equal 100.',
+        ],
+        'PATCH api/akademik/setting-nilai/{id}' => [
+            'summary' => 'Update grade weight settings',
+            'description' => 'Updates grade weight settings and validates that the total weight equals 100.',
+        ],
     ];
 
     private array $entityNames = [
@@ -109,6 +137,7 @@ class ApiOperationDescriptionExtension extends OperationExtension
         'khs' => ['grade report', 'grade reports'],
         'krs' => ['study plan', 'study plans'],
         'nilai' => ['grade', 'grades'],
+        'setting-nilai' => ['grade weight setting', 'grade weight settings'],
         'prodi-dosen' => ['lecturer study program assignment', 'lecturer study program assignments'],
         'kurikulum-mata-kuliah' => ['curriculum course', 'curriculum courses'],
     ];
@@ -142,6 +171,7 @@ class ApiOperationDescriptionExtension extends OperationExtension
         'close',
         'roster',
         'batch-roll-call',
+        'batch',
     ];
 
     public function handle(Operation $operation, RouteInfo $routeInfo): void

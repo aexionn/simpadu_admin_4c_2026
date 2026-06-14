@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Akademik\KurikulumMataKuliahController;
 use App\Http\Controllers\Api\Akademik\NilaiController;
 use App\Http\Controllers\Api\Akademik\PresensiMahasiswaController;
 use App\Http\Controllers\Api\Akademik\PresensiSesiController;
+use App\Http\Controllers\Api\Akademik\SettingNilaiController;
 use App\Http\Controllers\Api\DataMaster\HariController;
 use App\Http\Controllers\Api\DataMaster\JurusanController;
 use App\Http\Controllers\Api\DataMaster\KabupatenController;
@@ -189,6 +190,20 @@ Route::middleware('auth:jwt')->group(function () {
             Route::post('presensi-mahasiswa/session/{id}/close', [PresensiSesiController::class, 'closeSession']);
         });
 
+        Route::middleware('role:super_admin,admin_akademik,admin_mahasiswa,dosen')->group(function () {
+            Route::post('nilai/batch',              [NilaiController::class, 'batchStore']);
+            Route::get('nilai',                     [NilaiController::class, 'index']);
+            Route::post('nilai',                    [NilaiController::class, 'store']);
+            Route::get('nilai/{id}',                [NilaiController::class, 'show']);
+            Route::patch('nilai/{id}',              [NilaiController::class, 'update']);
+            Route::delete('nilai/{id}',             [NilaiController::class, 'destroy']);
+
+            Route::get('setting-nilai',             [SettingNilaiController::class, 'index']);
+            Route::post('setting-nilai',            [SettingNilaiController::class, 'store']);
+            Route::get('setting-nilai/{id}',        [SettingNilaiController::class, 'show']);
+            Route::patch('setting-nilai/{id}',      [SettingNilaiController::class, 'update']);
+        });
+
         // ── Read: all roles ────────────────────────────────────────────────────
         Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
             // Kelas
@@ -206,9 +221,6 @@ Route::middleware('auth:jwt')->group(function () {
             // KRS
             Route::get('krs',                       [KrsController::class, 'index']);
             Route::get('krs/{id}',                  [KrsController::class, 'show']);
-            // Nilai
-            Route::get('nilai',                     [NilaiController::class, 'index']);
-            Route::get('nilai/{id}',                [NilaiController::class, 'show']);
             // Presensi Mahasiswa
             Route::get('presensi-mahasiswa',        [PresensiMahasiswaController::class, 'index']);
             Route::get('presensi-mahasiswa/{id}',   [PresensiMahasiswaController::class, 'show']);
@@ -242,10 +254,6 @@ Route::middleware('auth:jwt')->group(function () {
             // KRS ↔ Mata Kuliah
             Route::post('krs/{krsId}/mata-kuliah',       [KrsController::class, 'addMataKuliah']);
             Route::delete('krs/{krsId}/mata-kuliah/{mkId}', [KrsController::class, 'removeMataKuliah']);
-            // Nilai
-            Route::post('nilai',                    [NilaiController::class, 'store']);
-            Route::patch('nilai/{id}',              [NilaiController::class, 'update']);
-            Route::delete('nilai/{id}',             [NilaiController::class, 'destroy']);
             // Prodi Dosen
             Route::post('prodi-dosen',              [ProdiDosenController::class, 'store']);
             Route::patch('prodi-dosen/{id}',        [ProdiDosenController::class, 'update']);
