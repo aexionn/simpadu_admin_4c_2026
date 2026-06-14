@@ -13,7 +13,7 @@ class RuangUpdateRequest extends FormRequest
     {
         $id = $this->route('id');
         return [
-            'NAMA_RUANG' => 'sometimes|string|max:40|unique:ruang,NAMA_RUANG,' . $id . ',id_ruang',
+            'nama_ruang' => 'sometimes|string|max:40|unique:ruang,nama_ruang,' . $id . ',id_ruang',
         ];
     }
 }

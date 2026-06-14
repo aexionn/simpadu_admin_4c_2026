@@ -126,7 +126,7 @@ class PresensiMahasiswaController extends Controller
             return [
                 'id_kelas_master' => $km->ID_KELAS_MASTER,
                 'nim'             => $km->NIM,
-                'nama_mahasiswa'  => $users->get($km->NIM)?->name,
+                'nama_mahasiswa'  => $users->name,
                 'status_presensi' => $presensi?->STATUS_PRESENSI,
                 'metode'          => $presensi?->METODE,
             ];
