@@ -51,7 +51,7 @@ class PresensiSesiController extends Controller
                         'ID_SESI'         => $sesi->ID_SESI,
                         'NIM'             => $kelasMaster->NIM,
                         'PERTEMUAN_KE'    => $pertemuanKe,
-                        'STATUS_PRESENSI' => 'H',
+                        'STATUS_PRESENSI' => 'A',
                         'METODE'          => 'Manual',
                         'WAKTU_PRESENSI'  => now(),
                     ]);

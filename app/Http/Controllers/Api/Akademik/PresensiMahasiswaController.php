@@ -128,21 +128,30 @@ class PresensiMahasiswaController extends Controller
         DB::transaction(function () use ($rows) {
             $now = now();
 
-            $payload = array_map(fn (array $r) => [
-                'ID_KELAS_MASTER' => $r['id_kelas_master'],
-                'ID_KELAS_MK'     => $r['id_kelas_mk'],
-                'NIM'             => $r['nim'],
-                'PERTEMUAN_KE'    => $r['pertemuan_ke'],
-                'STATUS_PRESENSI' => $r['status_presensi'],
-                'METODE'          => 'Manual',
-                'WAKTU_PRESENSI'  => $now,
-            ], $rows);
+            foreach ($rows as $row) {
+                $attributes = [
+                    'ID_KELAS_MASTER' => $row['id_kelas_master'],
+                    'ID_KELAS_MK'     => $row['id_kelas_mk'],
+                    'PERTEMUAN_KE'    => $row['pertemuan_ke'],
+                ];
 
-            PresensiMahasiswa::upsert(
-                $payload,
-                ['ID_KELAS_MASTER', 'ID_KELAS_MK', 'PERTEMUAN_KE'],
-                ['STATUS_PRESENSI', 'METODE', 'WAKTU_PRESENSI']
-            );
+                $values = [
+                    'NIM'             => $row['nim'],
+                    'STATUS_PRESENSI' => $row['status_presensi'],
+                    'METODE'          => 'Manual',
+                'WAKTU_PRESENSI'  => $now,
+                ];
+
+                $presensi = PresensiMahasiswa::where($attributes)->first();
+
+                if ($presensi) {
+                    $presensi->update($values);
+
+                    continue;
+                }
+
+                PresensiMahasiswa::create($attributes + $values);
+            }
         });
 
         return $this->successMessage(
