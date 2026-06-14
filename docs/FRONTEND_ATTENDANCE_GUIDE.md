@@ -1,306 +1,80 @@
-# Frontend Implementation Guide — Hybrid Attendance System
+# Frontend Implementation Guide - Student Attendance
 
-## Architecture Overview
+## Flow Overview
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Lecturer UI                          │
-│  ┌──────────────┐  ┌────────────────────────────────┐  │
-│  │ Barcode Mode  │  │    Manual Roll Call Mode       │  │
-│  │ (hidden       │  │  ┌────┬────┬────┬────┬────┐   │  │
-│  │  input        │  │  │ No │NIM │Name│ H│I│S│A│   │  │
-│  │  listener)    │  │  ├────┼────┼────┼────┼────┤   │  │
-│  │               │  │  │ 1  │... │... │○│ │ │ │   │  │
-│  │               │  │  │ 2  │... │... │ │○│ │ │   │  │
-│  │               │  │  └────┴────┴────┴────┴────┘   │  │
-│  └──────────────┘  │         [Save Session]          │  │
-│                    └────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-         │                           │
-         ▼                           ▼
-  POST /akademik/presensi-    POST /akademik/presensi-
-  mahasiswa/barcode           mahasiswa/batch
-```
+1. Dosen or academic admin opens an attendance session for a class schedule and meeting.
+2. The backend creates one `presensi_sesi` row.
+3. The backend generates one `presensi_mahasiswa` row for each enrolled student in the selected class.
+4. Generated rows start with `status_presensi = "A"` and `metode = "Manual"`.
+5. Manual roll call and mahasiswa self-submit update those generated rows.
 
----
+QR and barcode attendance endpoints are not part of this flow.
 
-## 1. Barcode / QR Scanner Listener
-
-### Concept
-
-USB barcode scanners emulate a keyboard — they "type" the scanned string rapidly followed by an `Enter` key. We intercept these keystrokes with a hidden input field.
-
-### Implementation
-
-```html
-<!-- Hidden input that always has focus in barcode mode -->
-<input
-    id="barcode-input"
-    type="text"
-    autocomplete="off"
-    style="position: fixed; top: -100px; left: -100px; opacity: 0;"
-/>
-```
-
-```typescript
-// barcode-listener.ts
-const BARCODE_SCAN_TIMEOUT_MS = 50; // max ms between keystrokes
-const BARCODE_MIN_LENGTH = 5; // ignore short strings
-const SCAN_RESET_DELAY_MS = 1500; // auto-clear after success
-
-let barcodeBuffer = "";
-let lastKeyTime = 0;
-let scanTimer: ReturnType<typeof setTimeout> | null = null;
-
-const input = document.getElementById("barcode-input") as HTMLInputElement;
-
-input.addEventListener("keydown", (e: KeyboardEvent) => {
-    const now = Date.now();
-
-    // If gap between keystrokes is too large, it's manual typing — reset
-    if (now - lastKeyTime > BARCODE_SCAN_TIMEOUT_MS) {
-        barcodeBuffer = "";
-    }
-    lastKeyTime = now;
-
-    if (e.key === "Enter") {
-        e.preventDefault();
-        if (barcodeBuffer.length >= BARCODE_MIN_LENGTH) {
-            submitBarcode(barcodeBuffer);
-        }
-        barcodeBuffer = "";
-    } else if (e.key.length === 1) {
-        barcodeBuffer += e.key;
-    }
-});
-
-// Keep focus on the hidden input in barcode mode
-function enableBarcodeMode() {
-    input.focus();
-    input.value = "";
-}
-
-async function submitBarcode(barcodeString: string) {
-    try {
-        const res = await fetch("/api/akademik/presensi-mahasiswa/barcode", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                barcode_string: barcodeString,
-                ID_KELAS_MK: currentKelasMkId,
-                PERTEMUAN_KE: currentPertemuanKe,
-            }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            showToast(`✔ ${data.message}`, "success");
-            // Optionally highlight the student row green in the manual roster
-            highlightStudentRow(data.data.nim);
-        } else {
-            showToast(`✘ ${data.message}`, "error");
-        }
-    } catch {
-        showToast("Gagal terhubung ke server.", "error");
-    } finally {
-        // Clear after delay, re-focus
-        setTimeout(() => {
-            input.value = "";
-            input.focus();
-        }, SCAN_RESET_DELAY_MS);
-    }
-}
-```
-
-### Key points
-
-- The input must **always** have focus in barcode mode. Re-focus after every scan.
-- Barcode string is expected to be the student's **NIM** (11 characters).
-- The backend resolves `barcode → NIM → KelasMaster (enrollment) → PresensiMahasiswa`.
-
----
-
-## 2. Manual Roll Call UI
-
-### Data Flow
-
-1. Lecturer selects a **Kelas MK** (schedule) and **Pertemuan Ke** (meeting number).
-2. Frontend calls `GET /akademik/kelas-master?ID_KELAS=<id>` to fetch the roster.
-3. Renders a table with radio buttons for each student.
-
-### Roster Fetch
+## Open Session
 
 ```
-GET /api/akademik/kelas-master?ID_KELAS=<kelasId>
+POST /api/akademik/presensi-mahasiswa/session/open
 ```
 
-The response includes `kelas` (with `kelas_nama`), `tahun_akademik`, and optionally eager-loaded presensi data. Each row has:
-
-- `id_kelas_master` — the enrollment PK (sent back in batch)
-- `nim` — student ID
-- `no_absen` — absence number for sorting
-
-### Radio Button State Management
-
-```typescript
-interface AttendanceRow {
-    id_kelas_master: number;
-    nim: string;
-    no_absen: number;
-    status_presensi: "H" | "I" | "S" | "A" | null;
-}
-
-// Initialize all rows with null (unset)
-const [roster, setRoster] = useState<AttendanceRow[]>([]);
-
-function setStatus(index: number, status: "H" | "I" | "S" | "A") {
-    setRoster((prev) =>
-        prev.map((row, i) =>
-            i === index ? { ...row, status_presensi: status } : row,
-        ),
-    );
-}
-```
-
-### Rendering (React example)
-
-```tsx
-<table>
-    <thead>
-        <tr>
-            <th>No</th>
-            <th>NIM</th>
-            <th>Nama</th>
-            <th>H</th>
-            <th>I</th>
-            <th>S</th>
-            <th>A</th>
-        </tr>
-    </thead>
-    <tbody>
-        {roster.map((row, i) => (
-            <tr
-                key={row.id_kelas_master}
-                className={row.status_presensi ? "row-set" : "row-pending"}
-            >
-                <td>{row.no_absen}</td>
-                <td>{row.nim}</td>
-                <td>{/* student name from KelasMaster.kelas lookup */}</td>
-                {(["H", "I", "S", "A"] as const).map((s) => (
-                    <td key={s}>
-                        <input
-                            type="radio"
-                            name={`att-${row.id_kelas_master}`}
-                            checked={row.status_presensi === s}
-                            onChange={() => setStatus(i, s)}
-                        />
-                    </td>
-                ))}
-            </tr>
-        ))}
-    </tbody>
-</table>
-```
-
----
-
-## 3. Batch Submission ("Save Session")
-
-### When to submit
-
-The lecturer clicks **"Simpan Presensi"** after setting all radio buttons.
-
-### Building the payload
-
-```typescript
-function buildBatchPayload(): object {
-    return {
-        presensi: roster
-            .filter((row) => row.status_presensi !== null)
-            .map((row) => ({
-                id_kelas_master: row.id_kelas_master,
-                nim: row.nim,
-                id_kelas_mk: currentKelasMkId,
-                pertemuan_ke: currentPertemuanKe,
-                status_presensi: row.status_presensi,
-                metode: "Manual",
-            })),
-    };
-}
-```
-
-### Sending
-
-```typescript
-async function saveSession() {
-    const payload = buildBatchPayload();
-
-    if (payload.presensi.length === 0) {
-        showToast("Tidak ada data presensi untuk disimpan.", "warning");
-        return;
-    }
-
-    try {
-        const res = await fetch("/api/akademik/presensi-mahasiswa/batch", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            showToast(`✔ ${data.message}`, "success");
-            setRoster((prev) =>
-                prev.map((r) => ({ ...r, status_presensi: null })),
-            ); // reset
-        } else {
-            showToast(`✘ ${data.message}`, "error");
-        }
-    } catch {
-        showToast("Gagal terhubung ke server.", "error");
-    }
-}
-```
-
-### Backend behavior (for reference)
-
-- Uses Laravel `upsert()` — if a record already exists for the same `(ID_KELAS_MASTER, ID_KELAS_MK, PERTEMUAN_KE)`, it updates `STATUS_PRESENSI` instead of creating a duplicate.
-- All records are inserted/updated inside a single `DB::transaction()` — atomic.
-- Returns `{ success: true, message: "Batch presensi berhasil disimpan (N data)." }`.
-
----
-
-## API Reference Summary
-
-| Method   | Endpoint                               | Roles                                  | Description                      |
-| -------- | -------------------------------------- | -------------------------------------- | -------------------------------- |
-| `GET`    | `/akademik/presensi-mahasiswa`         | All read roles                         | List all attendance records      |
-| `GET`    | `/akademik/presensi-mahasiswa/{id}`    | All read roles                         | Detail of one record             |
-| `POST`   | `/akademik/presensi-mahasiswa`         | super_admin, admin_akademik            | Create single record (admin use) |
-| `PATCH`  | `/akademik/presensi-mahasiswa/{id}`    | super_admin, admin_akademik            | Update single record             |
-| `DELETE` | `/akademik/presensi-mahasiswa/{id}`    | super_admin, admin_akademik            | Delete record                    |
-| `POST`   | `/akademik/presensi-mahasiswa/barcode` | super_admin, admin_akademik, **dosen** | Barcode/QR scan attendance       |
-| `POST`   | `/akademik/presensi-mahasiswa/batch`   | super_admin, admin_akademik, **dosen** | Batch manual roll call           |
-
-### Barcode endpoint payload
+Payload:
 
 ```json
 {
-    "barcode_string": "12345678901",
     "ID_KELAS_MK": 5,
-    "PERTEMUAN_KE": 3
+    "PERTEMUAN_KE": 3,
+    "duration_minutes": 15
 }
 ```
 
-### Batch endpoint payload
+Use this before rendering the roll-call roster. Opening a session generates the initial `presensi_mahasiswa` rows from `kelas_master` for the class attached to `kelas_mk`.
+
+## Roster Fetch
+
+```
+GET /api/akademik/presensi-mahasiswa/roster?id_kelas_mk=5&pertemuan_ke=3
+```
+
+The roster is read directly from `presensi_mahasiswa`.
+
+Each row includes:
+
+- `id_presensi`
+- `id_kelas_master`
+- `id_kelas_mk`
+- `id_sesi`
+- `nim`
+- `pertemuan_ke`
+- `status_presensi`
+- `metode`
+- `waktu_presensi`
+
+Student names are not returned by this endpoint unless a reliable student profile source is added outside the `users` table.
+
+## Manual Roll Call
+
+Keep local UI state keyed by `id_presensi` or `id_kelas_master`. Render status controls for `H`, `I`, `S`, and `A`.
+
+```typescript
+interface AttendanceRow {
+    id_presensi: number;
+    id_kelas_master: number;
+    id_kelas_mk: number;
+    id_sesi: number | null;
+    nim: string;
+    pertemuan_ke: number;
+    status_presensi: "H" | "I" | "S" | "A";
+    metode: "Manual" | string;
+    waktu_presensi: string | null;
+}
+```
+
+Batch save endpoint:
+
+```
+POST /api/akademik/presensi-mahasiswa/batch-roll-call
+```
+
+Payload:
 
 ```json
 {
@@ -310,17 +84,54 @@ async function saveSession() {
             "nim": "12345678901",
             "id_kelas_mk": 5,
             "pertemuan_ke": 3,
-            "status_presensi": "H",
-            "metode": "Manual"
+            "status_presensi": "H"
         },
         {
             "id_kelas_master": 11,
             "nim": "12345678902",
             "id_kelas_mk": 5,
             "pertemuan_ke": 3,
-            "status_presensi": "A",
-            "metode": "Manual"
+            "status_presensi": "A"
         }
     ]
 }
 ```
+
+The backend updates existing generated rows or creates missing rows for the same `(ID_KELAS_MASTER, ID_KELAS_MK, PERTEMUAN_KE)` key.
+
+## Mahasiswa Self-Submit
+
+```
+POST /api/mahasiswa/presensi/submit
+```
+
+Payload:
+
+```json
+{
+    "id_kelas_master": 10,
+    "id_kelas_mk": 5,
+    "nim": "12345678901",
+    "pertemuan_ke": 3
+}
+```
+
+The backend checks the session and updates the generated row to:
+
+- `status_presensi = "H"`
+- `metode = "Manual"`
+- `id_sesi = current session ID`
+- `waktu_presensi = now`
+
+If the generated row does not exist, the backend returns `404` and the session must be opened first.
+
+## API Reference Summary
+
+| Method | Endpoint | Roles | Description |
+| --- | --- | --- | --- |
+| `POST` | `/api/akademik/presensi-mahasiswa/session/open` | `super_admin`, `admin_akademik`, `dosen` | Open a session and generate attendance rows |
+| `POST` | `/api/akademik/presensi-mahasiswa/session/{id}/close` | `super_admin`, `admin_akademik`, `dosen` | Close an active session |
+| `GET` | `/api/akademik/presensi-mahasiswa/roster` | authorized academic attendance roles | Read generated attendance rows |
+| `POST` | `/api/akademik/presensi-mahasiswa/batch-roll-call` | authorized academic attendance roles | Save manual roll call |
+| `POST` | `/api/mahasiswa/presensi/submit` | `mahasiswa` | Mark generated row as present |
+| `GET` | `/api/mahasiswa/presensi/available` | `mahasiswa` | List active attendance sessions |

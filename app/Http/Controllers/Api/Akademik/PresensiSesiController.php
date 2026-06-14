@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Akademik;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\PresensiSesiOpenRequest;
 use App\Http\Resources\PresensiSesiResource;
+use App\Models\KelasMaster;
 use App\Models\KelasMk;
 use App\Models\LogAktivitas;
+use App\Models\PresensiMahasiswa;
 use App\Models\PresensiSesi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -20,23 +22,45 @@ class PresensiSesiController extends Controller
         $pertemuanKe = (int) $validated['PERTEMUAN_KE'];
         $durationMin = (int) ($validated['duration_minutes'] ?? 15);
 
-        KelasMk::findOrFail($idKelasMk);
+        $kelasMk = KelasMk::findOrFail($idKelasMk);
 
-        $sesi = DB::transaction(function () use ($idKelasMk, $pertemuanKe, $durationMin) {
+        $sesi = DB::transaction(function () use ($kelasMk, $idKelasMk, $pertemuanKe, $durationMin) {
             PresensiSesi::where('ID_KELAS_MK', $idKelasMk)
                 ->where('is_active', true)
                 ->update(['is_active' => false]);
 
             $sesi = PresensiSesi::create([
-                'ID_KELAS_MK' => $idKelasMk,
+                'ID_KELAS_MK'  => $idKelasMk,
                 'PERTEMUAN_KE' => $pertemuanKe,
-                'expires_at' => now()->addMinutes($durationMin),
-                'is_active' => true,
+                'expires_at'   => now()->addMinutes($durationMin),
+                'is_active'    => true,
             ]);
 
+            $kelasMasterList = KelasMaster::where('ID_KELAS', $kelasMk->ID_KELAS)->get();
+
+            foreach ($kelasMasterList as $kelasMaster) {
+                $existing = PresensiMahasiswa::where('ID_KELAS_MASTER', $kelasMaster->ID_KELAS_MASTER)
+                    ->where('ID_KELAS_MK', $idKelasMk)
+                    ->where('PERTEMUAN_KE', $pertemuanKe)
+                    ->first();
+
+                if (! $existing) {
+                    PresensiMahasiswa::create([
+                        'ID_KELAS_MASTER' => $kelasMaster->ID_KELAS_MASTER,
+                        'ID_KELAS_MK'     => $idKelasMk,
+                        'ID_SESI'         => $sesi->ID_SESI,
+                        'NIM'             => $kelasMaster->NIM,
+                        'PERTEMUAN_KE'    => $pertemuanKe,
+                        'STATUS_PRESENSI' => 'H',
+                        'METODE'          => 'Manual',
+                        'WAKTU_PRESENSI'  => now(),
+                    ]);
+                }
+            }
+
             LogAktivitas::create([
-                'TIPE_AKTIVITAS' => 'OPEN_PRESENSI_SESSION',
-                'PESAN' => "Sesi presensi mahasiswa dibuka untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
+                'TIPE_AKTIVITAS'  => 'OPEN_PRESENSI_SESSION',
+                'PESAN'           => "Sesi presensi mahasiswa dibuka untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
                 'ENTITAS_TERKAIT' => 'presensi_sesi:' . $sesi->ID_SESI,
             ]);
 
