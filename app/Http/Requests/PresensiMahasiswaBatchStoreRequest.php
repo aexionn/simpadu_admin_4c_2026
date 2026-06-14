@@ -14,7 +14,7 @@ class PresensiMahasiswaBatchStoreRequest extends FormRequest
         return [
             'presensi'                    => 'required|array|min:1',
             'presensi.*.id_kelas_master'  => 'required|integer|exists:kelas_master,ID_KELAS_MASTER',
-            'presensi.*.nim'              => 'required|string|size:11',
+            'presensi.*.nim'              => 'required|string|max:11',
             'presensi.*.id_kelas_mk'      => 'required|integer|exists:kelas_mk,ID_KELAS_MK',
             'presensi.*.pertemuan_ke'     => 'required|integer|min:1',
             'presensi.*.status_presensi'  => 'required|in:H,I,S,A',
