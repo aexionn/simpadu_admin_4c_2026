@@ -52,11 +52,11 @@ class ApiOperationDescriptionExtension extends OperationExtension
         ],
         'POST api/mahasiswa/presensi/submit' => [
             'summary' => 'Submit student attendance',
-            'description' => 'Allows an authenticated mahasiswa user to mark their generated attendance row as present while the attendance session is active.',
+            'description' => 'Allows an authenticated mahasiswa user to submit attendance for an active class meeting session. The backend records the attendance as Hadir with Manual method while the session is open.',
         ],
         'POST api/akademik/presensi-mahasiswa/session/open' => [
             'summary' => 'Open a student attendance session',
-            'description' => 'Opens an attendance session for a class meeting and generates initial student attendance rows in presensi_mahasiswa for enrolled students in the class.',
+            'description' => 'Opens a student attendance session for a class meeting. Only super admins, academic admins, and dosen users can open sessions.',
         ],
         'POST api/akademik/presensi-mahasiswa/session/{id}/close' => [
             'summary' => 'Close a student attendance session',
@@ -67,8 +67,8 @@ class ApiOperationDescriptionExtension extends OperationExtension
             'description' => 'Returns a list of student attendance records.',
         ],
         'GET api/akademik/presensi-mahasiswa/roster' => [
-            'summary' => 'Display generated student attendance roster',
-            'description' => 'Returns student attendance rows from the presensi_mahasiswa table for a specific class schedule and meeting. These rows are generated when an attendance session is opened.',
+            'summary' => 'Display class roster with attendance status',
+            'description' => 'Returns the class roster for a specific class schedule and meeting, including the current attendance status for each student.',
         ],
         'POST api/akademik/presensi-mahasiswa/batch-roll-call' => [
             'summary' => 'Submit batch manual roll-call attendance',

@@ -19,6 +19,9 @@ class PresensiMahasiswaResource extends JsonResource
             'pertemuan_ke'     => $this->PERTEMUAN_KE,
             'status_presensi'  => $this->STATUS_PRESENSI,
             'metode'           => $this->METODE,
+            'kelas_master'     => new KelasMasterResource($this->whenLoaded('kelasMaster')),
+            'kelas_mk'         => new KelasMkResource($this->whenLoaded('kelasMk')),
+            'presensi_sesi'    => new PresensiSesiResource($this->whenLoaded('presensiSesi')),
         ];
     }
 }

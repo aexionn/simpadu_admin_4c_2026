@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MahasiswaPresensiSubmitRequest;
 use App\Http\Resources\PresensiMahasiswaResource;
 use App\Http\Resources\PresensiSesiResource;
+use App\Models\KelasMaster;
+use App\Models\KelasMk;
 use App\Models\LogAktivitas;
 use App\Models\PresensiMahasiswa;
 use App\Models\PresensiSesi;
@@ -15,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class MahasiswaPresensiController extends Controller
 {
+    private const EAGER = ['kelasMaster.kelas', 'kelasMk.kelas', 'presensiSesi'];
+
     public function available(Request $request): JsonResponse
     {
         if (! $request->user()?->hasRole('mahasiswa')) {
@@ -63,46 +67,70 @@ class MahasiswaPresensiController extends Controller
             return $this->errorResponse('Sesi presensi sudah kedaluwarsa.', 410);
         }
 
-        $presensi = PresensiMahasiswa::where('ID_KELAS_MASTER', $idKelasMaster)
-            ->where('ID_KELAS_MK', $idKelasMk)
-            ->where('PERTEMUAN_KE', $pertemuanKe)
-            ->where('NIM', $nim)
-            ->first();
+        $kelasMk = KelasMk::findOrFail($idKelasMk);
+        $kelasMaster = KelasMaster::findOrFail($idKelasMaster);
 
-        if (! $presensi) {
-            return $this->errorResponse(
-                'Data presensi mahasiswa belum dibuat untuk sesi ini. Silakan buka sesi terlebih dahulu.',
-                404
-            );
+        if ((string) $kelasMaster->NIM !== $nim) {
+            return $this->errorResponse('Data mahasiswa tidak sesuai dengan kelas.', 403);
         }
 
-        if ($presensi->STATUS_PRESENSI === 'H') {
-            return $this->successResponse(
-                new PresensiMahasiswaResource($presensi),
-                'Anda sudah tercatat hadir pada pertemuan ini.',
-                200
-            );
+        if ((int) $kelasMaster->ID_KELAS !== (int) $kelasMk->ID_KELAS) {
+            return $this->errorResponse('Mahasiswa tidak terdaftar pada kelas ini.', 403);
         }
 
-        DB::transaction(function () use ($presensi, $idKelasMk, $pertemuanKe, $session, $nim) {
-            $presensi->update([
+        $now = now();
+
+        [$presensi, $message, $status] = DB::transaction(function () use ($kelasMaster, $idKelasMk, $pertemuanKe, $session, $nim, $now) {
+            $existing = PresensiMahasiswa::where('ID_KELAS_MASTER', $kelasMaster->ID_KELAS_MASTER)
+                ->where('ID_KELAS_MK', $idKelasMk)
+                ->where('PERTEMUAN_KE', $pertemuanKe)
+                ->first();
+
+            if ($existing && $existing->STATUS_PRESENSI === 'H') {
+                return [$existing, 'Anda sudah tercatat hadir pada pertemuan ini.', 200];
+            }
+
+            if ($existing) {
+                $existing->update([
+                    'STATUS_PRESENSI' => 'H',
+                    'METODE' => 'Manual',
+                    'WAKTU_PRESENSI' => $now,
+                    'ID_SESI' => $session->ID_SESI,
+                ]);
+
+                LogAktivitas::create([
+                    'TIPE_AKTIVITAS' => 'SUBMIT_PRESENSI_MANDIRI',
+                    'PESAN' => "Status presensi mahasiswa NIM {$nim} diperbarui menjadi H melalui submit mandiri untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
+                    'ENTITAS_TERKAIT' => 'presensi_mahasiswa:' . $existing->ID_PRESENSI,
+                ]);
+
+                return [$existing, 'Presensi berhasil diperbarui menjadi hadir.', 200];
+            }
+
+            $presensi = PresensiMahasiswa::create([
+                'ID_KELAS_MASTER' => $kelasMaster->ID_KELAS_MASTER,
+                'ID_KELAS_MK' => $idKelasMk,
+                'ID_SESI' => $session->ID_SESI,
+                'NIM' => $nim,
+                'PERTEMUAN_KE' => $pertemuanKe,
                 'STATUS_PRESENSI' => 'H',
                 'METODE' => 'Manual',
-                'ID_SESI' => $session->ID_SESI,
-                'WAKTU_PRESENSI' => now(),
+                'WAKTU_PRESENSI' => $now,
             ]);
 
             LogAktivitas::create([
                 'TIPE_AKTIVITAS' => 'SUBMIT_PRESENSI_MANDIRI',
-                'PESAN' => "Status presensi mahasiswa NIM {$nim} diperbarui menjadi H melalui submit mandiri untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
+                'PESAN' => "Mahasiswa NIM {$nim} melakukan presensi mandiri untuk kelas_mk {$idKelasMk} pertemuan {$pertemuanKe}.",
                 'ENTITAS_TERKAIT' => 'presensi_mahasiswa:' . $presensi->ID_PRESENSI,
             ]);
+
+            return [$presensi, 'Presensi berhasil dicatat.', 201];
         });
 
         return $this->successResponse(
-            new PresensiMahasiswaResource($presensi->fresh()),
-            'Presensi berhasil diperbarui menjadi hadir.',
-            200
+            new PresensiMahasiswaResource($presensi->fresh()->load(self::EAGER)),
+            $message,
+            $status
         );
     }
 }
