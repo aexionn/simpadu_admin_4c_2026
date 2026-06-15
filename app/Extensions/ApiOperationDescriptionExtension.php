@@ -110,6 +110,42 @@ class ApiOperationDescriptionExtension extends OperationExtension
             'summary' => 'Update grade weight settings',
             'description' => 'Updates grade weight settings and validates that the total weight equals 100.',
         ],
+        'GET api/akademik/krs' => [
+            'summary' => 'Display KRS records',
+            'description' => 'Returns KRS records with optional filters for class master, NIM, semester, and approval status.',
+        ],
+        'POST api/akademik/krs' => [
+            'summary' => 'Create a KRS',
+            'description' => 'Creates a KRS for a student, sets status to Menunggu Persetujuan, and attaches selected class-course schedules.',
+        ],
+        'GET api/akademik/krs/{id}' => [
+            'summary' => 'Display a specific KRS',
+            'description' => 'Returns KRS detail with class master data and selected class-course schedules.',
+        ],
+        'PATCH api/akademik/krs/{id}' => [
+            'summary' => 'Update a KRS',
+            'description' => 'Updates KRS data. Approved KRS records cannot be modified.',
+        ],
+        'DELETE api/akademik/krs/{id}' => [
+            'summary' => 'Delete a KRS',
+            'description' => 'Deletes a KRS record and its attached class-course schedules.',
+        ],
+        'PATCH api/akademik/krs/{id}/status' => [
+            'summary' => 'Update KRS approval status',
+            'description' => 'Updates the approval status of a KRS record. Valid statuses are Disetujui, Ditolak, and Menunggu Persetujuan.',
+        ],
+        'POST api/akademik/krs/{krsId}/kelas-mk' => [
+            'summary' => 'Add class-course schedule to KRS',
+            'description' => 'Adds a kelas_mk schedule to a KRS after validating class membership and schedule conflicts.',
+        ],
+        'DELETE api/akademik/krs/{krsId}/kelas-mk/{kelasMkId}' => [
+            'summary' => 'Remove class-course schedule from KRS',
+            'description' => 'Removes a kelas_mk schedule from a KRS. Approved KRS records cannot be modified.',
+        ],
+        'GET api/mahasiswa/krs' => [
+            'summary' => 'Display student KRS records',
+            'description' => 'Returns KRS records for a mahasiswa by NIM.',
+        ],
     ];
 
     private array $entityNames = [

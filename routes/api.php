@@ -82,6 +82,7 @@ Route::middleware('auth:jwt')->group(function () {
     Route::middleware('role:mahasiswa')->prefix('mahasiswa')->group(function () {
         Route::get('presensi/available', [MahasiswaPresensiController::class, 'available']);
         Route::post('presensi/submit',   [MahasiswaPresensiController::class, 'submit']);
+        Route::get('krs',                 [KrsController::class, 'myKrs']);
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -248,18 +249,24 @@ Route::middleware('auth:jwt')->group(function () {
             Route::patch('khs/{id}',                [KhsController::class, 'update']);
             Route::delete('khs/{id}',               [KhsController::class, 'destroy']);
             // KRS
-            Route::post('krs',                      [KrsController::class, 'store']);
-            Route::patch('krs/{id}',                [KrsController::class, 'update']);
             Route::delete('krs/{id}',               [KrsController::class, 'destroy']);
-            // KRS ↔ Mata Kuliah
-            Route::post('krs/{krsId}/mata-kuliah',       [KrsController::class, 'addMataKuliah']);
-            Route::delete('krs/{krsId}/mata-kuliah/{mkId}', [KrsController::class, 'removeMataKuliah']);
             // Prodi Dosen
             Route::post('prodi-dosen',              [ProdiDosenController::class, 'store']);
             Route::patch('prodi-dosen/{id}',        [ProdiDosenController::class, 'update']);
             Route::delete('prodi-dosen/{id}',       [ProdiDosenController::class, 'destroy']);
             // Presensi Mahasiswa — admin correction only (with audit log)
             });
+
+        Route::middleware('role:super_admin,admin_akademik,dosen')->group(function () {
+            Route::patch('krs/{id}/status',               [KrsController::class, 'updateStatus']);
+        });
+
+        Route::middleware('role:super_admin,admin_akademik,mahasiswa')->group(function () {
+            Route::post('krs',                            [KrsController::class, 'store']);
+            Route::post('krs/{krsId}/kelas-mk',           [KrsController::class, 'addKelasMk']);
+            Route::delete('krs/{krsId}/kelas-mk/{kelasMkId}', [KrsController::class, 'removeKelasMk']);
+            Route::patch('krs/{id}',                      [KrsController::class, 'update']);
+        });
             
             // ── Presensi (dosen access) ────────────────────────────────────────────
         Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai')->group(function () {

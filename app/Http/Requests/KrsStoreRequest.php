@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class KrsStoreRequest extends FormRequest
@@ -12,9 +11,11 @@ class KrsStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'NAMA_KELAS' => 'required|string|max:2',
-            'NIM'        => 'required|string|size:11',
-            'SEMESTER'   => 'required|integer|min:1|max:14',
+            'id_kelas_master' => 'required|integer|exists:kelas_master,ID_KELAS_MASTER',
+            'nim'             => 'required|string|size:11',
+            'semester'        => 'required|integer|min:1|max:14',
+            'kelas_mk_ids'    => 'required|array|min:1',
+            'kelas_mk_ids.*'  => 'required|integer|distinct|exists:kelas_mk,ID_KELAS_MK',
         ];
     }
 }

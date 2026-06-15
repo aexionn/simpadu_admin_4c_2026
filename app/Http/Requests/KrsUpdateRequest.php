@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class KrsUpdateRequest extends FormRequest
@@ -12,9 +11,10 @@ class KrsUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'NAMA_KELAS' => 'sometimes|string|max:2',
-            'NIM'        => 'sometimes|string|size:11',
-            'SEMESTER'   => 'sometimes|integer|min:1|max:14',
+            'id_kelas_master' => 'sometimes|integer|exists:kelas_master,ID_KELAS_MASTER',
+            'nim'             => 'sometimes|string|size:11',
+            'semester'        => 'sometimes|integer|min:1|max:14',
+            'status'          => 'sometimes|in:Disetujui,Ditolak,Menunggu Persetujuan',
         ];
     }
 }

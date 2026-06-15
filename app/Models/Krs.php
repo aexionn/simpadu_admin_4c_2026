@@ -11,14 +11,20 @@ class Krs extends Model
     public $incrementing = true;
 
     protected $fillable = [
-        'NAMA_KELAS',
+        'ID_KELAS_MASTER',
         'NIM',
         'SEMESTER',
+        'STATUS',
     ];
 
-    public function mataKuliahs()
+    public function kelasMaster()
     {
-        return $this->belongsToMany(MataKuliah::class, 'mk_krs', 'ID_KRS', 'ID_MK')
+        return $this->belongsTo(KelasMaster::class, 'ID_KELAS_MASTER', 'ID_KELAS_MASTER');
+    }
+
+    public function kelasMks()
+    {
+        return $this->belongsToMany(KelasMk::class, 'kelas_mk_krs', 'ID_KRS', 'ID_KELAS_MK')
             ->withTimestamps();
     }
 }

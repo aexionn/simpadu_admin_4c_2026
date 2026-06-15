@@ -23,9 +23,4 @@ class MataKuliah extends Model
             ->withTimestamps();
     }
 
-    public function krss()
-    {
-        return $this->belongsToMany(Krs::class, 'mk_krs', 'ID_KRS', 'ID_MK')
-            ->withTimestamps();
-    }
 }
