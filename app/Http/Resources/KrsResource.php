@@ -18,6 +18,7 @@ class KrsResource extends JsonResource
 
             'kelas_master' => $this->whenLoaded('kelasMaster', fn () => [
                 'id_kelas'       => $this->kelasMaster->ID_KELAS,
+                'nama_kelas'     => $this->kelasMaster->kelas?->KELAS_NAMA,
                 'nim'            => $this->kelasMaster->NIM,
                 'tahun_akademik' => $this->kelasMaster->ID_TAHUN_AKADEMIK,
             ]),

@@ -33,7 +33,7 @@ class KrsController extends Controller
             'status'          => 'sometimes|in:Disetujui,Ditolak,Menunggu Persetujuan',
         ]);
 
-        $krs = Krs::with(['kelasMaster', 'kelasMks'])
+        $krs = Krs::with(['kelasMaster.kelas', 'kelasMks'])
             ->when(isset($filters['id_kelas_master']), fn ($query) => $query->where('ID_KELAS_MASTER', $filters['id_kelas_master']))
             ->when(isset($filters['nim']), fn ($query) => $query->where('NIM', $filters['nim']))
             ->when(isset($filters['semester']), fn ($query) => $query->where('SEMESTER', $filters['semester']))
@@ -80,12 +80,12 @@ class KrsController extends Controller
             return $krs;
         });
 
-        return $this->successResponse(new KrsResource($krs->load(['kelasMaster', 'kelasMks'])), 'KRS berhasil ditambahkan', 201);
+        return $this->successResponse(new KrsResource($krs->load(['kelasMaster.kelas', 'kelasMks'])), 'KRS berhasil ditambahkan', 201);
     }
 
     public function show(int $id): JsonResponse
     {
-        return $this->successResponse(new KrsResource(Krs::with(['kelasMaster', 'kelasMks'])->findOrFail($id)), 'Detail KRS berhasil diambil');
+        return $this->successResponse(new KrsResource(Krs::with(['kelasMaster.kelas', 'kelasMks'])->findOrFail($id)), 'Detail KRS berhasil diambil');
     }
 
     public function update(KrsUpdateRequest $request, int $id): JsonResponse
@@ -119,7 +119,7 @@ class KrsController extends Controller
 
         DB::transaction(fn () => $krs->update($payload));
 
-        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster', 'kelasMks'])), 'KRS berhasil diperbarui');
+        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster.kelas', 'kelasMks'])), 'KRS berhasil diperbarui');
     }
 
     public function destroy(int $id): JsonResponse
@@ -141,12 +141,12 @@ class KrsController extends Controller
             'STATUS' => $request->validated('status'),
         ]));
 
-        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster', 'kelasMks'])), 'Status KRS berhasil diperbarui');
+        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster.kelas', 'kelasMks'])), 'Status KRS berhasil diperbarui');
     }
 
     public function addKelasMk(int $krsId, ManageKelasMkRequest $request): JsonResponse
     {
-        $krs = Krs::with(['kelasMaster', 'kelasMks'])->findOrFail($krsId);
+        $krs = Krs::with(['kelasMaster.kelas', 'kelasMks'])->findOrFail($krsId);
 
         if ($krs->STATUS === self::STATUS_APPROVED) {
             return $this->errorResponse(self::APPROVED_LOCK_MESSAGE, 422);
@@ -170,7 +170,7 @@ class KrsController extends Controller
             }
         });
 
-        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster', 'kelasMks'])), 'Kelas MK ditambahkan ke KRS');
+        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster.kelas', 'kelasMks'])), 'Kelas MK ditambahkan ke KRS');
     }
 
     public function removeKelasMk(int $krsId, int $kelasMkId): JsonResponse
@@ -189,7 +189,7 @@ class KrsController extends Controller
             }
         });
 
-        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster', 'kelasMks'])), 'Kelas MK dihapus dari KRS');
+        return $this->successResponse(new KrsResource($krs->fresh()->load(['kelasMaster.kelas', 'kelasMks'])), 'Kelas MK dihapus dari KRS');
     }
 
     public function myKrs(Request $request): JsonResponse
@@ -198,7 +198,7 @@ class KrsController extends Controller
             'nim' => 'required|string|size:11',
         ]);
 
-        $krs = Krs::with(['kelasMaster', 'kelasMks'])
+        $krs = Krs::with(['kelasMaster.kelas', 'kelasMks'])
             ->where('NIM', $validated['nim'])
             ->orderByDesc('ID_KRS')
             ->get();
