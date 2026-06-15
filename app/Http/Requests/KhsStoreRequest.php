@@ -13,7 +13,7 @@ class KhsStoreRequest extends FormRequest
     {
         return [
             'SEMESTER' => 'required|integer|min:1|max:14',
-            'NIM'      => 'required|string|size:11',
+            'NIM'      => 'required|string|max:11',
             'IPS'      => 'nullable|numeric|min:0|max:4',
             'IPK'      => 'nullable|numeric|min:0|max:4',
         ];

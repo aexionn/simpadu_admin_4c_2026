@@ -28,7 +28,7 @@ class KrsController extends Controller
     {
         $filters = $request->validate([
             'id_kelas_master' => 'sometimes|integer|exists:kelas_master,ID_KELAS_MASTER',
-            'nim'             => 'sometimes|string|size:11',
+            'nim'             => 'sometimes|string|max:11',
             'semester'        => 'sometimes|integer|min:1|max:14',
             'status'          => 'sometimes|in:Disetujui,Ditolak,Menunggu Persetujuan',
         ]);
@@ -195,7 +195,7 @@ class KrsController extends Controller
     public function myKrs(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'nim' => 'required|string|size:11',
+            'nim' => 'required|string|max:11',
         ]);
 
         $krs = Krs::with(['kelasMaster.kelas', 'kelasMks'])

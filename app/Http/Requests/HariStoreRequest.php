@@ -12,7 +12,7 @@ class HariStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'NAMA_HARI' => 'required|string|size:6|unique:hari,NAMA_HARI',
+            'NAMA_HARI' => 'required|string|max:6|unique:hari,NAMA_HARI',
         ];
     }
 }

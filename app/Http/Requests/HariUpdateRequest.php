@@ -13,7 +13,7 @@ class HariUpdateRequest extends FormRequest
     {
         $id = $this->route('id');
         return [
-            'nama_hari' => 'sometimes|string|size:6|unique:hari,nama_hari,' . $id . ',id_hari',
+            'nama_hari' => 'sometimes|string|max:6|unique:hari,nama_hari,' . $id . ',id_hari',
         ];
     }
 }

@@ -13,7 +13,7 @@ class KhsUpdateRequest extends FormRequest
     {
         return [
             'SEMESTER' => 'sometimes|integer|min:1|max:14',
-            'NIM'      => 'sometimes|string|size:11',
+            'NIM'      => 'sometimes|string|max:11',
             'IPS'      => 'nullable|numeric|min:0|max:4',
             'IPK'      => 'nullable|numeric|min:0|max:4',
         ];

@@ -12,7 +12,7 @@ class NilaiUpdateRequest extends FormRequest
     {
         return [
             'id_dosen'            => 'sometimes|integer',
-            'nim'                 => 'sometimes|string|size:11',
+            'nim'                 => 'sometimes|string|max:11',
             'id_kelas'            => 'sometimes|integer|exists:kelas,ID_KELAS',
             'id_mk'               => 'sometimes|integer|exists:mata_kuliah,ID_MK',
             'participation_score' => 'sometimes|numeric|min:0|max:100',

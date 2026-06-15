@@ -29,7 +29,7 @@ class NilaiController extends Controller
             'id_dosen' => 'sometimes|integer',
             'id_kelas' => 'sometimes|integer|exists:kelas,ID_KELAS',
             'id_mk' => 'sometimes|integer|exists:mata_kuliah,ID_MK',
-            'nim' => 'sometimes|string|size:11',
+            'nim' => 'sometimes|string|max:11',
         ]);
 
         $nilai = Nilai::with(['kelas', 'mataKuliah'])
@@ -73,7 +73,7 @@ class NilaiController extends Controller
             'id_kelas' => 'required|integer|exists:kelas,ID_KELAS',
             'id_mk' => 'required|integer|exists:mata_kuliah,ID_MK',
             'grades' => 'required|array|min:1',
-            'grades.*.nim' => 'required|string|size:11',
+            'grades.*.nim' => 'required|string|max:11',
             'grades.*.participation_score' => 'required|numeric|min:0|max:100',
             'grades.*.assignment_score' => 'required|numeric|min:0|max:100',
             'grades.*.quiz_score' => 'required|numeric|min:0|max:100',
