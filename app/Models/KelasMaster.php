@@ -14,6 +14,7 @@ class KelasMaster extends Model
         'NO_ABSEN',
         'ID_KELAS',
         'NIM',
+        'NAMA_MAHASISWA',
         'ID_TAHUN_AKADEMIK',
         'ID_STATUS_MHS',
     ];

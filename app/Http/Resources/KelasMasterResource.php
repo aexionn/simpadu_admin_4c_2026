@@ -14,6 +14,7 @@ class KelasMasterResource extends JsonResource
             'no_absen'          => $this->NO_ABSEN,
             'id_kelas'          => $this->ID_KELAS,
             'nim'               => $this->NIM,
+            'nama_mahasiswa'    => $this->NAMA_MAHASISWA, 
             'id_tahun_akademik' => $this->ID_TAHUN_AKADEMIK,
             'id_status_mhs'     => $this->ID_STATUS_MHS,
             'kelas'             => new KelasResource($this->whenLoaded('kelas')),
