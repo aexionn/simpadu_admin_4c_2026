@@ -231,7 +231,7 @@ Route::middleware('auth:jwt')->group(function () {
         });
 
         // ── Write: super_admin + admin_akademik ────────────────────────────────
-        Route::middleware('role:super_admin,admin_akademik')->group(function () {
+        Route::middleware('role:super_admin,admin_akademik,admin_mahasiswa,admin_pegawai')->group(function () {
             // Kelas
             Route::post('kelas',                    [KelasController::class, 'store']);
             Route::patch('kelas/{id}',              [KelasController::class, 'update']);
