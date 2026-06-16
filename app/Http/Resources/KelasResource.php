@@ -19,6 +19,7 @@ class KelasResource extends JsonResource
             'kelas_nama'         => $this->KELAS_NAMA,
             'program_kelas'      => new ProgramKelasResource($this->whenLoaded('programKelas')),
             'tahun_akademik'     => new TahunAkademikResource($this->whenLoaded('tahunAkademik')),
+            'prodi'              => new ProdiResource($this->whenLoaded('prodi')),
             // 'kelasMks'           => KelasMkResource::collection($this->whenLoaded('kelasMks')),
             // 'kelasMasters'       => KelasMasterResource::collection($this->whenLoaded('kelasMasters')),
             'created_at'         => $this->created_at?->toDateTimeString(),

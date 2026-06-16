@@ -16,7 +16,7 @@ class KelasController extends Controller
 {
     public function index(): JsonResponse
     {
-        $data = Kelas::with(['programKelas', 'tahunAkademik'])
+        $data = Kelas::with(['programKelas', 'tahunAkademik', 'prodi'])
             ->orderByDesc('ID_KELAS')
             ->get();
 
@@ -50,7 +50,7 @@ class KelasController extends Controller
         $kelas = DB::transaction(fn () => Kelas::create($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->load(['programKelas', 'tahunAkademik'])),
+            new KelasResource($kelas->load(['programKelas', 'tahunAkademik', 'prodi'])),
             'Kelas berhasil ditambahkan',
             201
         );
@@ -58,7 +58,7 @@ class KelasController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $kelas = Kelas::with(['programKelas', 'tahunAkademik'])
+        $kelas = Kelas::with(['programKelas', 'tahunAkademik', 'prodi'])
             ->findOrFail($id);
 
         return $this->successResponse(
@@ -86,7 +86,7 @@ class KelasController extends Controller
         DB::transaction(fn () => $kelas->update($validated));
 
         return $this->successResponse(
-            new KelasResource($kelas->fresh()->load(['programKelas', 'tahunAkademik'])),
+            new KelasResource($kelas->fresh()->load(['programKelas', 'tahunAkademik', 'prodi'])),
             'Kelas berhasil diperbarui'
         );
     }

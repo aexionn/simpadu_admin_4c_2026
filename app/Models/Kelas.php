@@ -29,13 +29,18 @@ class Kelas extends Model
         return $this->belongsTo(TahunAkademik::class, 'ID_TAHUN_AKADEMIK', 'ID_TAHUN_AKADEMIK');
     }
 
-    public function kelasMasters()
+    public function prodi()
     {
-        return $this->hasMany(KelasMaster::class, 'ID_KELAS', 'ID_KELAS');
+        return $this->belongsTo(Prodi::class, 'ID_PRODI', 'id_prodi');
     }
 
-    public function kelasMks()
-    {
-        return $this->hasMany(KelasMk::class, 'ID_KELAS', 'ID_KELAS');
-    }
+    // public function kelasMasters()
+    // {
+    //     return $this->hasMany(KelasMaster::class, 'ID_KELAS', 'ID_KELAS');
+    // }
+
+    // public function kelasMks()
+    // {
+    //     return $this->hasMany(KelasMk::class, 'ID_KELAS', 'ID_KELAS');
+    // }
 }
