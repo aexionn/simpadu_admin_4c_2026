@@ -15,6 +15,7 @@ class KelasMasterUpdateRequest extends FormRequest
             'NO_ABSEN'          => 'sometimes|integer|min:1',
             'ID_KELAS'          => 'sometimes|integer|exists:kelas,ID_KELAS',
             'NIM'               => 'sometimes|string|max:11',
+            'NAMA_MAHASISWA'    => 'sometimes|string|max:100',
             'ID_TAHUN_AKADEMIK' => 'sometimes|integer|exists:tahun_akademik,ID_TAHUN_AKADEMIK',
             'STATUS_MHS'     => 'nullable|integer',
         ];
