@@ -13,7 +13,6 @@ import {
   UserCheck,
   UserCog,
   Shield,
-  Activity,
   Settings,
   LogOut,
   School
@@ -37,7 +36,6 @@ const menuItems = [
   { path: "/absensi-pegawai", icon: UserCog, label: "Absensi Pegawai" },
   { path: "/user-management", icon: Users, label: "User Management" },
   { path: "/role-management", icon: Shield, label: "Role Management" },
-  { path: "/log-activity", icon: Activity, label: "Log Activity" },
   { path: "/pengaturan", icon: Settings, label: "Pengaturan" },
 ];
 
