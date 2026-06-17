@@ -22,6 +22,8 @@ class KelasMkResource extends JsonResource
             'deskripsi'        => $this->DESKRIPSI,
             'kelas'            => new KelasResource($this->whenLoaded('kelas')),
             'kurikulum_mk'     => new KurikulumMkResource($this->whenLoaded('kurikulumMk')),
+            'hari'             => new HariResource($this->whenLoaded('hari')),
+            'ruang'            => new RuangResource($this->whenLoaded('ruang')),
             // 'created_at'       => $this->created_at?->toDateTimeString(),
             // 'updated_at'       => $this->updated_at?->toDateTimeString(),
         ];

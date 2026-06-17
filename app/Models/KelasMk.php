@@ -38,13 +38,13 @@ class KelasMk extends Model
         return $this->belongsTo(KurikulumMk::class, 'ID_KURIKULUM_MK', 'ID_KURIKULUM_MK');
     }
 
-    public function presensiMahasiswas()
+    public function hari()
     {
-        return $this->hasMany(PresensiMahasiswa::class, 'ID_KELAS_MK', 'ID_KELAS_MK');
+        return $this->belongsTo(Hari::class, 'ID_HARI', 'id_hari');
     }
 
-    public function presensiSesis()
+    public function ruang()
     {
-        return $this->hasMany(PresensiSesi::class, 'ID_KELAS_MK', 'ID_KELAS_MK');
+        return $this->belongsTo(Ruang::class, 'ID_RUANG', 'id_ruang');
     }
 }
