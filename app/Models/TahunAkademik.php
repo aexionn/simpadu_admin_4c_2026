@@ -6,12 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
-#[Fillable(['NAMA_TAHUN_AKADEMIK', 'AKTIF', 'TGL_AWAL_KULIAH', 'TGL_AKHIR_KULIAH',])]
+#[Fillable(['ID_TAHUN_AKADEMIK', 'NAMA_TAHUN_AKADEMIK', 'AKTIF', 'TGL_AWAL_KULIAH', 'TGL_AKHIR_KULIAH',])]
 
 class TahunAkademik extends Model
 {
     protected $table      = 'tahun_akademik';
-    public $incrementing = true;
+    public  $incrementing = false;
     protected $primaryKey = 'ID_TAHUN_AKADEMIK';
     public    $timestamps = false;           // intentionally no timestamps
 
