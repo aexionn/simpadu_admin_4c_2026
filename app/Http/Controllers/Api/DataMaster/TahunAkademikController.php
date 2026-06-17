@@ -67,7 +67,6 @@ class TahunAkademikController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'ID_TAHUN_AKADEMIK'   => 'required|string|max:31',
             'NAMA_TAHUN_AKADEMIK' => 'required|string|max:40|unique:tahun_akademik,NAMA_TAHUN_AKADEMIK',
             'AKTIF'               => 'required|in:Y,T',
             'TGL_AWAL_KULIAH'     => 'required|date_format:Y-m-d',
@@ -75,6 +74,7 @@ class TahunAkademikController extends Controller
         ]);
 
         // Generate the next ID before creating the record.
+        $validated['ID_TAHUN_AKADEMIK'] = $this->idGenerator->next();
 
         $tahun = DB::transaction(function () use ($validated) {
             // Create as inactive first to avoid a transient "two active rows" state.
@@ -82,7 +82,6 @@ class TahunAkademikController extends Controller
             if ($shouldActivate) {
                 $validated['AKTIF'] = 'T';
             }
-            $validated['ID_TAHUN_AKADEMIK'] = $this->idGenerator->next();
             $tahun = TahunAkademik::create($validated);
 
             if ($shouldActivate) {
