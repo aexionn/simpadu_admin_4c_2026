@@ -65,7 +65,7 @@ class PresensiPegawaiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = PresensiPegawai::query()->orderByDesc('TANGGAL');
+        $query = PresensiPegawai::with('user')->orderByDesc('TANGGAL');
 
         if ($this->isAdmin($request)) {
             if ($request->filled('id_user')) {
@@ -327,7 +327,7 @@ class PresensiPegawaiController extends Controller
             ? (int) $request->input('id_user')
             : $request->user()->id_user;
 
-        $query = PresensiPegawai::where('id_user', $userId);
+        $query = PresensiPegawai::with('user')->where('id_user', $userId);
 
         if ($request->filled('bulan')) {
             $query->whereMonth('TANGGAL', $request->integer('bulan'));
