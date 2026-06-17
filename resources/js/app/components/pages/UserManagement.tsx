@@ -1,100 +1,195 @@
-import { useState } from "react";
-import { Search, Plus, Edit, Trash2, Filter, Lock } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { Edit, Filter, Plus, Power, Search, Trash2 } from "lucide-react";
 import Modal from "../Modal";
+import { api, readJson } from "../../lib/apiClient";
 import { adminService } from "../../services/apiServices";
-import { ErrorState, LoadingState, useApiData, valueOf } from "./apiPageUtils";
+import { ErrorState, LoadingState } from "./apiPageUtils";
 
-const userData = [
-  { id: 1, username: "admin", nama: "Administrator", email: "admin@poliban.ac.id", role: "Administrator", status: "Aktif", lastLogin: "2026-05-12 09:30" },
-  { id: 2, username: "ahmad.yani", nama: "Dr. Ahmad Yani, M.Kom.", email: "ahmad.yani@poliban.ac.id", role: "Dosen", status: "Aktif", lastLogin: "2026-05-12 08:15" },
-  { id: 3, username: "siti.nurhaliza", nama: "Prof. Siti Nurhaliza, M.Kom.", email: "siti.nurhaliza@poliban.ac.id", role: "Dosen", status: "Aktif", lastLogin: "2026-05-11 16:20" },
-  { id: 4, username: "bambang.sutrisno", nama: "Dr. Bambang Sutrisno, M.T.", email: "bambang.sutrisno@poliban.ac.id", role: "Dosen", status: "Aktif", lastLogin: "2026-05-12 07:45" },
-  { id: 5, username: "2301010001", nama: "Ahmad Fauzi", email: "2301010001@student.poliban.ac.id", role: "Mahasiswa", status: "Aktif", lastLogin: "2026-05-11 14:30" },
-  { id: 6, username: "2301010002", nama: "Siti Nurhaliza", email: "2301010002@student.poliban.ac.id", role: "Mahasiswa", status: "Aktif", lastLogin: "2026-05-12 10:15" },
-  { id: 7, username: "staff.akademik", nama: "Rina Wati, S.Kom.", email: "staff.akademik@poliban.ac.id", role: "Staff Akademik", status: "Aktif", lastLogin: "2026-05-12 08:00" },
-  { id: 8, username: "kaprodi.ti", nama: "M. Rizal, M.Kom.", email: "kaprodi.ti@poliban.ac.id", role: "Kaprodi", status: "Aktif", lastLogin: "2026-05-11 15:45" },
-];
+type ApiResponse<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T;
+  errors?: Record<string, string[]>;
+};
 
-function normalizeUserStatus(value: any) {
-  return value === "Y" || value === true || value === 1 || value === "1" || value === "Aktif"
-    ? "Aktif"
-    : "Nonaktif";
+type UserRow = {
+  id_user: number;
+  name: string;
+  email: string;
+  is_active: "Y" | "T" | string;
+  roles?: string[];
+};
+
+type RoleRow = {
+  id_role: number;
+  role_name: string;
+};
+
+const emptyForm = {
+  name: "",
+  email: "",
+  password: "",
+  role: "",
+  is_active: "Y",
+};
+
+function getApiMessage(json: ApiResponse<unknown> | null, fallback: string) {
+  const firstError = Object.values(json?.errors ?? {})[0]?.[0];
+  return firstError ?? json?.message ?? fallback;
 }
 
-function mapUser(item: any) {
-  const roles = item.roles;
-  const role = Array.isArray(roles)
-    ? roles.map((roleItem) => roleItem.role_name ?? roleItem.name).filter(Boolean).join(", ")
-    : valueOf(item.role_name, item.role, "-");
+function activeLabel(value: string) {
+  return value === "Y" ? "Aktif" : "Nonaktif";
+}
 
-  return {
-    id: valueOf(item.id_user, item.ID_USER, item.id),
-    username: valueOf(item.username, item.email, "-"),
-    nama: valueOf(item.name, item.nama, item.NAMA_USER, "-"),
-    email: valueOf(item.email, "-"),
-    role,
-    status: normalizeUserStatus(valueOf(item.is_active, item.IS_ACTIVE, item.status, "Y")),
-    lastLogin: valueOf(item.last_login_at, item.lastLogin, item.updated_at, "-"),
-  };
+function roleColor(role: string) {
+  const roleName = role.toLowerCase();
+  if (roleName.includes("super") || roleName.includes("admin")) return "bg-red-100 text-red-800";
+  if (roleName.includes("dosen")) return "bg-blue-100 text-blue-800";
+  if (roleName.includes("mahasiswa")) return "bg-green-100 text-green-800";
+  if (roleName.includes("pegawai")) return "bg-orange-100 text-orange-800";
+  return "bg-gray-100 text-gray-800";
 }
 
 export default function UserManagement() {
-  const { data, loading, error } = useApiData({
-    fallback: userData,
-    fetcher: adminService.getUsers,
-    mapper: mapUser,
-  });
+  const [data, setData] = useState<UserRow[]>([]);
+  const [roles, setRoles] = useState<RoleRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editData, setEditData] = useState<any>(null);
+  const [editData, setEditData] = useState<UserRow | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
-  const filteredData = data.filter((item) => {
-    const matchesSearch =
-      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === "all" || item.role === filterRole;
-    const matchesStatus = filterStatus === "all" || item.status === filterStatus;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  async function loadData() {
+    setLoading(true);
+    setError(null);
 
-  const handleAdd = () => {
-    setEditData(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (item: any) => {
-    setEditData(item);
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsModalOpen(false);
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "Administrator":
-        return "bg-red-100 text-red-800";
-      case "Dosen":
-        return "bg-blue-100 text-blue-800";
-      case "Mahasiswa":
-        return "bg-green-100 text-green-800";
-      case "Kaprodi":
-        return "bg-purple-100 text-purple-800";
-      case "Staff Akademik":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+    try {
+      const [users, roleRows] = await Promise.all([adminService.getUsers(), adminService.getRoles()]);
+      setData(users as UserRow[]);
+      setRoles(roleRows as RoleRow[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data user.");
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const roleOptions = useMemo(() => roles.map((role) => role.role_name), [roles]);
+
+  const filteredData = useMemo(() => {
+    const keyword = searchTerm.toLowerCase();
+
+    return data.filter((item) => {
+      const itemRoles = item.roles ?? [];
+      const matchesSearch =
+        item.name.toLowerCase().includes(keyword) ||
+        item.email.toLowerCase().includes(keyword) ||
+        String(item.id_user).includes(keyword);
+      const matchesRole = filterRole === "all" || itemRoles.includes(filterRole);
+      const matchesStatus = filterStatus === "all" || item.is_active === filterStatus;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [data, filterRole, filterStatus, searchTerm]);
+
+  function openCreateModal() {
+    setEditData(null);
+    setForm({ ...emptyForm, role: roleOptions[0] ?? "" });
+    setIsModalOpen(true);
+  }
+
+  function openEditModal(item: UserRow) {
+    setEditData(item);
+    setForm({
+      name: item.name,
+      email: item.email,
+      password: "",
+      role: item.roles?.[0] ?? roleOptions[0] ?? "",
+      is_active: item.is_active || "Y",
+    });
+    setIsModalOpen(true);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    const payload = editData
+      ? {
+          name: form.name,
+          email: form.email,
+          is_active: form.is_active,
+        }
+      : {
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          role: form.role,
+          is_active: form.is_active,
+        };
+
+    try {
+      const res = editData
+        ? await api.patch(`/admin/users/${editData.id_user}`, payload)
+        : await api.post("/admin/users", payload);
+      const json = await readJson<ApiResponse<UserRow>>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal menyimpan data user."));
+      }
+
+      setIsModalOpen(false);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyimpan data user.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggle(item: UserRow) {
+    try {
+      const res = await api.patch(`/admin/users/${item.id_user}/toggle`);
+      const json = await readJson<ApiResponse<UserRow>>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal mengubah status user."));
+      }
+
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal mengubah status user.");
+    }
+  }
+
+  async function handleDelete(item: UserRow) {
+    if (!window.confirm(`Hapus user ${item.name}?`)) return;
+
+    try {
+      const res = await api.delete(`/admin/users/${item.id_user}`);
+      const json = await readJson<ApiResponse<null>>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal menghapus user."));
+      }
+
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menghapus user.");
+    }
+  }
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
         <p className="text-gray-600 mt-1">Kelola pengguna sistem SIMPADU</p>
@@ -103,30 +198,28 @@ export default function UserManagement() {
       {loading && <LoadingState label="Memuat data user..." />}
       {error && <ErrorState message={error} />}
 
-      {/* Action Bar */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Cari username, nama, atau email..."
+              placeholder="Cari ID user, nama, atau email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <button
-            onClick={handleAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={openCreateModal}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
             <span>Tambah User</span>
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 mt-4">
           <Filter className="w-5 h-5 text-gray-600" />
           <select
             value={filterRole}
@@ -134,11 +227,11 @@ export default function UserManagement() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Semua Role</option>
-            <option value="Administrator">Administrator</option>
-            <option value="Dosen">Dosen</option>
-            <option value="Mahasiswa">Mahasiswa</option>
-            <option value="Kaprodi">Kaprodi</option>
-            <option value="Staff Akademik">Staff Akademik</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
           </select>
           <select
             value={filterStatus}
@@ -146,90 +239,94 @@ export default function UserManagement() {
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Semua Status</option>
-            <option value="Aktif">Aktif</option>
-            <option value="Nonaktif">Nonaktif</option>
+            <option value="Y">Aktif</option>
+            <option value="T">Nonaktif</option>
           </select>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">No</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Username</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Nama Lengkap</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">ID User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Nama</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Last Login</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.username}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{item.nama}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.email}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getRoleColor(item.role)}`}>
-                      {item.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                      item.status === 'Aktif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.lastLogin}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Edit"
+              {filteredData.map((item, index) => {
+                const itemRoles = item.roles?.length ? item.roles : ["-"];
+
+                return (
+                  <tr key={item.id_user} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.id_user}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{item.email}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {itemRoles.map((role) => (
+                          <span key={role} className={`px-3 py-1 text-xs font-medium rounded-full ${roleColor(role)}`}>
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                          item.is_active === "Y" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                        }`}
                       >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors" title="Reset Password">
-                        <Lock className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" title="Hapus">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                        {activeLabel(item.is_active)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleToggle(item)}
+                          className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                          title="Toggle Status"
+                        >
+                          <Power className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!loading && filteredData.length === 0 && (
+                <tr>
+                  <td className="px-6 py-8 text-center text-sm text-gray-500" colSpan={7}>
+                    Tidak ada data user.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Menampilkan <span className="font-medium">{filteredData.length}</span> dari{" "}
-            <span className="font-medium">{data.length}</span> data
-          </p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
-              Previous
-            </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">1</button>
-            <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
-              Next
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Modal Form */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -238,87 +335,70 @@ export default function UserManagement() {
         <form onSubmit={handleSubmit} className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Nama</label>
               <input
                 type="text"
-                defaultValue={editData?.username}
-                placeholder="Contoh: admin"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nama Lengkap <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                defaultValue={editData?.nama}
-                placeholder="Contoh: Dr. Ahmad Yani, M.Kom."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <input
                 type="email"
-                defaultValue={editData?.email}
-                placeholder="Contoh: user@poliban.ac.id"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
             </div>
 
             {!editData && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  placeholder="Masukkan password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    minLength={8}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Pilih Role</option>
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Role <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <select
-                defaultValue={editData?.role}
+                value={form.is_active}
+                onChange={(e) => setForm({ ...form, is_active: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               >
-                <option value="">Pilih Role</option>
-                <option value="Administrator">Administrator</option>
-                <option value="Dosen">Dosen</option>
-                <option value="Mahasiswa">Mahasiswa</option>
-                <option value="Kaprodi">Kaprodi</option>
-                <option value="Staff Akademik">Staff Akademik</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <select
-                defaultValue={editData?.status || "Aktif"}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="Aktif">Aktif</option>
-                <option value="Nonaktif">Nonaktif</option>
+                <option value="Y">Aktif</option>
+                <option value="T">Nonaktif</option>
               </select>
             </div>
           </div>
@@ -333,9 +413,10 @@ export default function UserManagement() {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={saving}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
             >
-              {editData ? "Simpan Perubahan" : "Tambah User"}
+              {saving ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>

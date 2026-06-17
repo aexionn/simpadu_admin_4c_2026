@@ -17,15 +17,18 @@ use Illuminate\Support\Facades\DB;
 
 class PresensiMahasiswaController extends Controller
 {
-    // private const EAGER = [
-    //     'kelasMaster.kelas', 'kelasMaster.tahunAkademik',
-    //     'kelasMk.kelas', 'kelasMk.kurikulumMk.mataKuliah',
-    //     'presensiSesi',
-    // ];
+    private const EAGER = [
+        'kelasMaster.kelas',
+        'kelasMaster.tahunAkademik',
+        'kelasMk.kelas',
+        'kelasMk.kurikulumMk.mataKuliah',
+        'presensiSesi',
+    ];
 
     public function index(): JsonResponse
     {
-        $presensi = PresensiMahasiswa::orderByDesc('ID_PRESENSI')
+        $presensi = PresensiMahasiswa::with(self::EAGER)
+            ->orderByDesc('ID_PRESENSI')
             ->get();
 
         return $this->successCollection(
@@ -36,7 +39,7 @@ class PresensiMahasiswaController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $presensi = PresensiMahasiswa::findOrFail($id);
+        $presensi = PresensiMahasiswa::with(self::EAGER)->findOrFail($id);
 
         return $this->successResponse(
             new PresensiMahasiswaResource($presensi),
@@ -76,7 +79,7 @@ class PresensiMahasiswaController extends Controller
         });
 
         return $this->successResponse(
-            new PresensiMahasiswaResource($presensi->fresh()),
+            new PresensiMahasiswaResource($presensi->fresh()->load(self::EAGER)),
             'Presensi Mahasiswa berhasil diperbarui'
         );
     }

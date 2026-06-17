@@ -14,7 +14,7 @@ class RoleController extends Controller
 {
     public function index(): JsonResponse
     {
-        $roles = Role::select('id_role', 'role_name')->get();
+        $roles = Role::withCount('users')->get();
 
         return $this->successCollection(
             RoleResource::collection($roles),

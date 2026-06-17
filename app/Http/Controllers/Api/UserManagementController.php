@@ -30,7 +30,7 @@ class UserManagementController extends Controller
             ]);
 
             $role = Role::where('role_name', $payload['role'])->firstOrFail();
-            $user->roles()->attach($role->getKey());
+            $user->roles()->syncWithoutDetaching([$role->getKey()]);
 
             return $user->load('roles');
         });
