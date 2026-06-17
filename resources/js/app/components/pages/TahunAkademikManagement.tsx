@@ -140,6 +140,15 @@ export default function TahunAkademikManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError(null);
+
+        // Client-side date validation
+        if (form.tgl_awal_kuliah && form.tgl_akhir_kuliah) {
+            if (new Date(form.tgl_akhir_kuliah) <= new Date(form.tgl_awal_kuliah)) {
+                setFormError("Tanggal selesai harus setelah tanggal mulai.");
+                return;
+            }
+        }
+
         setIsSaving(true);
 
         const payload = {
@@ -162,13 +171,15 @@ export default function TahunAkademikManagement() {
 
             if (!res.ok) {
                 const json = await res.json().catch(() => ({}));
-                let msg = json?.message;
-                if (!msg && json?.errors && typeof json.errors === "object") {
-                    const firstGroup = Object.values(json.errors)[0];
-                    if (Array.isArray(firstGroup) && firstGroup.length > 0) {
-                        msg = String(firstGroup[0]);
-                    }
+                // Prefer field-level validation errors over the generic message
+                let msg = "";
+                if (json?.errors && typeof json.errors === "object") {
+                    const allErrors = Object.values(json.errors)
+                        .flat()
+                        .filter(Boolean);
+                    msg = allErrors.join("; ");
                 }
+                if (!msg) msg = json?.message;
                 if (!msg) msg = "Gagal menyimpan data.";
                 throw new Error(msg);
             }
