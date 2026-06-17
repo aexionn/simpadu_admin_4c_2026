@@ -7,13 +7,17 @@ use App\Models\TahunAkademik;
 use App\Http\Requests\TahunAkademikUpdateRequest;
 use App\Http\Resources\TahunAkademikResource;
 use App\Services\ActivateToggle;
+use App\Services\TahunAkademikIdGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TahunAkademikController extends Controller
 {
-    public function __construct(protected ActivateToggle $toggle) {}
+    public function __construct(
+        protected ActivateToggle $toggle,
+        protected TahunAkademikIdGenerator $idGenerator,
+    ) {}
 
     /**
      * Display all academic years.
@@ -63,11 +67,14 @@ class TahunAkademikController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
+            'ID_TAHUN_AKADEMIK'   => 'required|string|max:31',
             'NAMA_TAHUN_AKADEMIK' => 'required|string|max:40|unique:tahun_akademik,NAMA_TAHUN_AKADEMIK',
             'AKTIF'               => 'required|in:Y,T',
             'TGL_AWAL_KULIAH'     => 'required|date_format:Y-m-d',
             'TGL_AKHIR_KULIAH'    => 'required|date_format:Y-m-d|after:TGL_AWAL_KULIAH',
         ]);
+
+        // Generate the next ID before creating the record.
 
         $tahun = DB::transaction(function () use ($validated) {
             // Create as inactive first to avoid a transient "two active rows" state.
@@ -75,7 +82,7 @@ class TahunAkademikController extends Controller
             if ($shouldActivate) {
                 $validated['AKTIF'] = 'T';
             }
-
+            $validated['ID_TAHUN_AKADEMIK'] = $this->idGenerator->next();
             $tahun = TahunAkademik::create($validated);
 
             if ($shouldActivate) {
