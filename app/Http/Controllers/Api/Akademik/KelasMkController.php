@@ -14,7 +14,7 @@ class KelasMkController extends Controller
 {
     public function index(): JsonResponse
     {
-        $data = KelasMk::with(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum'])
+        $data = KelasMk::with(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum', 'hari', 'ruang'])
             ->orderByDesc('ID_KELAS_MK')
             ->get();
 
@@ -29,7 +29,7 @@ class KelasMkController extends Controller
         $kelasMk = DB::transaction(fn () => KelasMk::create($request->validated()));
 
         return $this->successResponse(
-            new KelasMkResource($kelasMk->load(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum'])),
+            new KelasMkResource($kelasMk->load(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum', 'hari', 'ruang'])),
             'Kelas MK berhasil ditambahkan',
             201
         );
@@ -37,7 +37,7 @@ class KelasMkController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $kelasMk = KelasMk::with(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum'])
+        $kelasMk = KelasMk::with(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum', 'hari', 'ruang'])
             ->findOrFail($id);
 
         return $this->successResponse(
@@ -52,7 +52,7 @@ class KelasMkController extends Controller
         DB::transaction(fn () => $kelasMk->update($request->validated()));
 
         return $this->successResponse(
-            new KelasMkResource($kelasMk->fresh()->load(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum'])),
+            new KelasMkResource($kelasMk->fresh()->load(['kelas', 'kurikulumMk.mataKuliah', 'kurikulumMk.kurikulum', 'hari', 'ruang'])),
             'Kelas MK berhasil diperbarui'
         );
     }

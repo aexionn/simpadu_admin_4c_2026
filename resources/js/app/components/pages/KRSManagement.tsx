@@ -1,121 +1,201 @@
-import { useState } from "react";
-import { Search, Filter, Eye, CheckCircle, XCircle } from "lucide-react";
-import { akademikService } from "../../services/apiServices";
-import { ErrorState, LoadingState, useApiData, valueOf } from "./apiPageUtils";
+import { useCallback, useEffect, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { api, readJson } from "../../lib/apiClient";
 
-const krsData = [
-  { id: 1, nim: "2301010001", nama: "Ahmad Fauzi", semester: 5, tahunAkademik: "2025/2026 Genap", totalSKS: 21, jumlahMK: 7, status: "Disetujui", tanggalPengisian: "2026-02-05" },
-  { id: 2, nim: "2301010002", nama: "Siti Nurhaliza", semester: 3, tahunAkademik: "2025/2026 Genap", totalSKS: 20, jumlahMK: 6, status: "Disetujui", tanggalPengisian: "2026-02-03" },
-  { id: 3, nim: "2301010003", nama: "Muhammad Rizki", semester: 5, tahunAkademik: "2025/2026 Genap", totalSKS: 22, jumlahMK: 7, status: "Menunggu", tanggalPengisian: "2026-02-10" },
-  { id: 4, nim: "2301010004", nama: "Rina Wati", semester: 1, tahunAkademik: "2025/2026 Genap", totalSKS: 20, jumlahMK: 6, status: "Disetujui", tanggalPengisian: "2026-02-02" },
-  { id: 5, nim: "2301010005", nama: "Bambang Sutrisno", semester: 3, tahunAkademik: "2025/2026 Genap", totalSKS: 18, jumlahMK: 6, status: "Ditolak", tanggalPengisian: "2026-02-08" },
-  { id: 6, nim: "2301010006", nama: "Sri Lestari", semester: 5, tahunAkademik: "2025/2026 Genap", totalSKS: 21, jumlahMK: 7, status: "Menunggu", tanggalPengisian: "2026-02-11" },
-];
+type KrsStatus = "Disetujui" | "Ditolak" | "Menunggu Persetujuan";
 
-function normalizeKrsStatus(value: any) {
-  const status = String(valueOf(value, "Menunggu")).toLowerCase();
-  if (status.includes("setuju") || status === "approved") return "Disetujui";
-  if (status.includes("tolak") || status === "rejected") return "Ditolak";
-  return "Menunggu";
+interface KrsItem {
+  id_krs: number;
+  id_kelas_master: number;
+  nim: string;
+  semester: number;
+  status: KrsStatus;
+  kelas_master?: {
+    id_kelas?: number;
+    nama_kelas?: string | null;
+    tahun_akademik?: number | string | null;
+  } | null;
+  kelas_mks?: Array<{ id_kelas_mk: number }>;
+  created_at?: string | null;
 }
 
-function mapKrs(item: any) {
-  const mahasiswa = item.mahasiswa ?? item.user ?? {};
-  return {
-    id: valueOf(item.ID_KRS, item.id_krs, item.id),
-    nim: valueOf(item.NIM, item.nim, mahasiswa.NIM, mahasiswa.nim, "-"),
-    nama: valueOf(item.NAMA_MAHASISWA, item.nama_mahasiswa, mahasiswa.name, mahasiswa.nama, "-"),
-    semester: Number(valueOf(item.SEMESTER, item.semester, 0)),
-    tahunAkademik: valueOf(item.NAMA_TAHUN_AKADEMIK, item.tahun_akademik, item.tahunAkademik, "-"),
-    totalSKS: Number(valueOf(item.TOTAL_SKS, item.total_sks, item.totalSKS, 0)),
-    jumlahMK: Number(valueOf(item.JUMLAH_MK, item.jumlah_mk, item.jumlahMK, 0)),
-    status: normalizeKrsStatus(valueOf(item.STATUS, item.status)),
-    tanggalPengisian: valueOf(item.TANGGAL_PENGISIAN, item.tanggal_pengisian, item.created_at, "-"),
-  };
+function getApiMessage(json: any, fallback: string) {
+  return (
+    json?.message ??
+    Object.values(json?.errors ?? {})?.[0]?.[0] ??
+    fallback
+  );
+}
+
+function getStatusColor(status: KrsStatus) {
+  if (status === "Disetujui") return "bg-green-100 text-green-800";
+  if (status === "Ditolak") return "bg-red-100 text-red-800";
+  return "bg-yellow-100 text-yellow-800";
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export default function KRSManagement() {
-  const { data, loading, error } = useApiData({
-    fallback: krsData,
-    fetcher: akademikService.getKrs,
-    mapper: mapKrs,
-  });
+  const [data, setData] = useState<KrsItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | KrsStatus>("all");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<KrsItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await api.get("/akademik/krs");
+      const json = await readJson<any>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal memuat data KRS."));
+      }
+
+      setData(json?.data ?? []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal memuat data KRS.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const filteredData = data.filter((item) => {
+    const keyword = searchTerm.toLowerCase();
     const matchesSearch =
-      item.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.nim.toLowerCase().includes(searchTerm.toLowerCase());
+      item.nim.toLowerCase().includes(keyword) ||
+      String(item.id_krs).includes(keyword) ||
+      String(item.id_kelas_master).includes(keyword) ||
+      (item.kelas_master?.nama_kelas ?? "").toLowerCase().includes(keyword);
     const matchesFilter = filterStatus === "all" || item.status === filterStatus;
+
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Disetujui":
-        return "bg-green-100 text-green-800";
-      case "Menunggu":
-        return "bg-yellow-100 text-yellow-800";
-      case "Ditolak":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const updateStatus = async (item: KrsItem, status: KrsStatus) => {
+    setUpdatingId(item.id_krs);
+    setError(null);
+
+    try {
+      const res = await api.patch(`/akademik/krs/${item.id_krs}/status`, {
+        status,
+      });
+      const json = await readJson<any>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal memperbarui status KRS."));
+      }
+
+      await fetchData();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Gagal memperbarui status KRS.",
+      );
+    } finally {
+      setUpdatingId(null);
     }
   };
 
-  const totalKrs = data.length;
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await api.delete(`/akademik/krs/${deleteTarget.id_krs}`);
+      const json = await readJson<any>(res);
+
+      if (!res.ok || json?.success === false) {
+        throw new Error(getApiMessage(json, "Gagal menghapus KRS."));
+      }
+
+      setDeleteTarget(null);
+      await fetchData();
+    } catch (err) {
+      setDeleteTarget(null);
+      setError(err instanceof Error ? err.message : "Gagal menghapus KRS.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const totalDisetujui = data.filter((item) => item.status === "Disetujui").length;
-  const totalMenunggu = data.filter((item) => item.status === "Menunggu").length;
+  const totalMenunggu = data.filter((item) => item.status === "Menunggu Persetujuan").length;
   const totalDitolak = data.filter((item) => item.status === "Ditolak").length;
 
   return (
     <div className="p-8">
-      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Manajemen KRS</h1>
         <p className="text-gray-600 mt-1">Kelola Kartu Rencana Studi mahasiswa</p>
       </div>
 
-      {loading && <LoadingState label="Memuat data KRS..." />}
-      {error && <ErrorState message={error} />}
+      {error && (
+        <div className="mb-4 flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <p className="flex-1 text-sm">{error}</p>
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-1 text-sm font-medium hover:underline"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Coba lagi
+          </button>
+        </div>
+      )}
 
-      {/* Action Bar */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Cari berdasarkan NIM atau nama..."
+              placeholder="Cari ID KRS, NIM, atau kelas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-        </div>
-
-        {/* Filter */}
-        <div className="flex items-center gap-3">
-          <Filter className="w-5 h-5 text-gray-600" />
           <select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">Semua Status</option>
-            <option value="Menunggu">Menunggu Persetujuan</option>
+            <option value="Menunggu Persetujuan">Menunggu Persetujuan</option>
             <option value="Disetujui">Disetujui</option>
             <option value="Ditolak">Ditolak</option>
           </select>
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600">Total KRS</p>
-          <p className="text-2xl font-bold text-blue-600">{totalKrs}</p>
+          <p className="text-2xl font-bold text-blue-600">{data.length}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600">Disetujui</p>
@@ -131,80 +211,127 @@ export default function KRSManagement() {
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">No</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">NIM</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Nama Mahasiswa</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Semester</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Tahun Akademik</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Total SKS</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Jumlah MK</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Tanggal</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredData.map((item, index) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.nim}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{item.nama}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.semester}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.tahunAkademik}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.totalSKS}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.jumlahMK}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.tanggalPengisian}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Lihat Detail">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      {item.status === "Menunggu" && (
-                        <>
-                          <button className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors" title="Setujui">
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors" title="Tolak">
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20 gap-3 text-gray-500">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span>Memuat data...</span>
+          </div>
+        ) : filteredData.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            Tidak ada data KRS yang cocok.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="w-28 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">ID KRS</th>
+                  <th className="w-32 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">NIM</th>
+                  <th className="w-28 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Semester</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Kelas</th>
+                  <th className="w-36 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Kelas MK</th>
+                  <th className="w-36 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Tanggal</th>
+                  <th className="w-44 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
+                  <th className="w-36 px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredData.map((item) => (
+                  <tr key={item.id_krs} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.id_krs}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{item.nim}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{item.semester}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {item.kelas_master?.nama_kelas ?? `ID Master ${item.id_kelas_master}`}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{item.kelas_mks?.length ?? 0} kelas</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">{formatDate(item.created_at)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {item.status === "Menunggu Persetujuan" && (
+                          <>
+                            <button
+                              onClick={() => updateStatus(item, "Disetujui")}
+                              disabled={updatingId === item.id_krs}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                              title="Setujui"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => updateStatus(item, "Ditolak")}
+                              disabled={updatingId === item.id_krs}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                              title="Tolak"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => setDeleteTarget(item)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Menampilkan <span className="font-medium">{filteredData.length}</span> dari{" "}
-            <span className="font-medium">{data.length}</span> data
-          </p>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
-              Previous
-            </button>
-            <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm">1</button>
-            <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
-              Next
-            </button>
+        {!isLoading && filteredData.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Menampilkan <span className="font-medium">{filteredData.length}</span> dari{" "}
+              <span className="font-medium">{data.length}</span> KRS
+            </p>
+          </div>
+        )}
+      </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => !isDeleting && setDeleteTarget(null)}
+          />
+          <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-md mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900">Hapus KRS</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Yakin ingin menghapus KRS #{deleteTarget.id_krs} milik NIM{" "}
+              <span className="font-medium text-gray-900">{deleteTarget.nim}</span>?
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center gap-2"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Hapus
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

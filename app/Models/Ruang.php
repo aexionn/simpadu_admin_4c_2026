@@ -14,4 +14,9 @@ class Ruang extends Model
     protected $fillable = [
         'NAMA_RUANG',
     ];
+
+    public function kelasMks()
+    {
+        return $this->hasMany(KelasMk::class, 'ID_RUANG', 'id_ruang');
+    }
 }

@@ -34,13 +34,13 @@ return new class extends Migration
                   ->cascadeOnUpdate();
 
             $table->foreign('ID_RUANG')
-                ->references('ID_RUANG')
+                ->references('id_ruang')
                 ->on('ruang')
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
 
             $table->foreign('ID_HARI')
-                ->references('ID_HARI')
+                ->references('id_hari')
                 ->on('hari')
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();

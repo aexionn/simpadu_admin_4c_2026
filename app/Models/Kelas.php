@@ -39,8 +39,8 @@ class Kelas extends Model
     //     return $this->hasMany(KelasMaster::class, 'ID_KELAS', 'ID_KELAS');
     // }
 
-    // public function kelasMks()
-    // {
-    //     return $this->hasMany(KelasMk::class, 'ID_KELAS', 'ID_KELAS');
-    // }
+    public function kelasMks()
+    {
+        return $this->hasMany(KelasMk::class, 'ID_KELAS', 'ID_KELAS');
+    }
 }

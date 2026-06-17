@@ -14,4 +14,9 @@ class Hari extends Model
     protected $fillable = [
         'nama_hari',
     ];
+
+    public function kelasMks()
+    {
+        return $this->hasMany(KelasMk::class, 'ID_HARI', 'id_hari');
+    }
 }
