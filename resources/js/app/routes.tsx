@@ -18,7 +18,6 @@ import AbsensiMahasiswa from "./components/pages/AbsensiMahasiswa";
 import AbsensiPegawai from "./components/pages/AbsensiPegawai";
 import UserManagement from "./components/pages/UserManagement";
 import RoleManagement from "./components/pages/RoleManagement";
-import LogActivity from "./components/pages/LogActivity";
 import Pengaturan from "./components/pages/Pengaturan";
 import LoginAdmin from "./components/pages/LoginAdmin";
 import NotFound from "./components/pages/NotFound";
@@ -57,7 +56,6 @@ export const router = createBrowserRouter([
           { path: "absensi-pegawai", Component: AbsensiPegawai },
           { path: "user-management", Component: UserManagement },
           { path: "role-management", Component: RoleManagement },
-          { path: "log-activity", Component: LogActivity },
           { path: "pengaturan", Component: Pengaturan },
           { path: "*", Component: NotFound },
         ],
