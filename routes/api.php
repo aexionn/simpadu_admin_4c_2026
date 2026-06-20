@@ -90,16 +90,21 @@ Route::middleware('auth:jwt')->group(function () {
     // ═══════════════════════════════════════════════════════════════════════════
     Route::prefix('presensi-pegawai')->group(function () {
 
-        // ── Employee self-service (pegawai role) ───────────────────────────
+        // ── Employee self-service (all roles) — concrete paths ──────────────
         Route::middleware('role:super_admin,admin_akademik,admin_pegawai,pegawai,dosen,admin_mahasiswa,keuangan')->group(function () {
-            // Custom attendance actions (concrete paths BEFORE {id})
             Route::post('/masuk',     [PresensiPegawaiController::class, 'masuk']);
             Route::post('/keluar',    [PresensiPegawaiController::class, 'keluar']);
             Route::get('/hari-ini',   [PresensiPegawaiController::class, 'hariIni']);
-            Route::get('/rekap',      [PresensiPegawaiController::class, 'rekap']);
+        });
 
-            // Read
-            Route::get('/',          [PresensiPegawaiController::class, 'index']);
+        // ── Admin-only listing (before /{id} to avoid route clash) ─────────
+        Route::middleware('role:super_admin,admin_akademik,admin_pegawai,admin_mahasiswa')->group(function () {
+            Route::get('/',           [PresensiPegawaiController::class, 'index']);
+            Route::get('/rekap',      [PresensiPegawaiController::class, 'rekap']);
+        });
+
+        // ── Self-service show (all roles) — must come after concrete paths ──
+        Route::middleware('role:super_admin,admin_akademik,admin_pegawai,pegawai,dosen,admin_mahasiswa,keuangan')->group(function () {
             Route::get('/{id}',      [PresensiPegawaiController::class, 'show']);
         });
 
@@ -133,12 +138,16 @@ Route::middleware('auth:jwt')->group(function () {
             Route::get('tahun-akademik',             [TahunAkademikController::class, 'index']);
             Route::get('tahun-akademik/active',      [TahunAkademikController::class, 'active']);
             Route::get('tahun-akademik/{id}',        [TahunAkademikController::class, 'show']);
-            Route::get('kurikulum',                  [KurikulumController::class, 'index']);
             Route::get('kurikulum/{id}',             [KurikulumController::class, 'show']);
             Route::get('provinsi',                   [ProvinsiController::class, 'index']);
             Route::get('provinsi/{id}',              [ProvinsiController::class, 'show']);
             Route::get('kabupaten',                  [KabupatenController::class, 'index']);
             Route::get('kabupaten/{id}',             [KabupatenController::class, 'show']);
+        });
+
+        // Read index: admin roles only
+        Route::middleware('role:super_admin,admin_akademik,admin_pegawai,admin_mahasiswa')->group(function () {
+            Route::get('kurikulum',                  [KurikulumController::class, 'index']);
         });
 
         // Write: super_admin + admin_akademik
@@ -193,7 +202,6 @@ Route::middleware('auth:jwt')->group(function () {
 
         Route::middleware('role:super_admin,admin_akademik,admin_mahasiswa,dosen')->group(function () {
             Route::post('nilai/batch',              [NilaiController::class, 'batchStore']);
-            Route::get('nilai',                     [NilaiController::class, 'index']);
             Route::post('nilai',                    [NilaiController::class, 'store']);
             Route::get('nilai/{id}',                [NilaiController::class, 'show']);
             Route::patch('nilai/{id}',              [NilaiController::class, 'update']);
@@ -205,28 +213,33 @@ Route::middleware('auth:jwt')->group(function () {
             Route::patch('setting-nilai/{id}',      [SettingNilaiController::class, 'update']);
         });
 
-        // ── Read: all roles ────────────────────────────────────────────────────
-        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
-            // Kelas
+        // ── Read index: admin roles only ──────────────────────────────────────
+        Route::middleware('role:super_admin,admin_akademik,admin_pegawai,admin_mahasiswa')->group(function () {
             Route::get('kelas',                     [KelasController::class, 'index']);
-            Route::get('kelas/{id}',                [KelasController::class, 'show']);
             // Kelas Master
             Route::get('kelas-master',              [KelasMasterController::class, 'index']);
-            Route::get('kelas-master/{id}',         [KelasMasterController::class, 'show']);
             // Kelas MK
             Route::get('kelas-mk',                  [KelasMkController::class, 'index']);
-            Route::get('kelas-mk/{id}',             [KelasMkController::class, 'show']);
             // KHS
             Route::get('khs',                       [KhsController::class, 'index']);
-            Route::get('khs/{id}',                  [KhsController::class, 'show']);
             // KRS
             Route::get('krs',                       [KrsController::class, 'index']);
-            Route::get('krs/{id}',                  [KrsController::class, 'show']);
             // Presensi Mahasiswa
             Route::get('presensi-mahasiswa',        [PresensiMahasiswaController::class, 'index']);
-            Route::get('presensi-mahasiswa/{id}',   [PresensiMahasiswaController::class, 'show']);
             // Prodi Dosen
             Route::get('prodi-dosen',               [ProdiDosenController::class, 'index']);
+            // Nilai
+            Route::get('nilai',                     [NilaiController::class, 'index']);
+        });
+
+        // ── Read: all roles ────────────────────────────────────────────────────
+        Route::middleware('role:super_admin,admin_akademik,dosen,pegawai,admin_pegawai,mahasiswa,admin_mahasiswa,keuangan')->group(function () {
+            Route::get('kelas/{id}',                [KelasController::class, 'show']);
+            Route::get('kelas-master/{id}',         [KelasMasterController::class, 'show']);
+            Route::get('kelas-mk/{id}',             [KelasMkController::class, 'show']);
+            Route::get('khs/{id}',                  [KhsController::class, 'show']);
+            Route::get('krs/{id}',                  [KrsController::class, 'show']);
+            Route::get('presensi-mahasiswa/{id}',   [PresensiMahasiswaController::class, 'show']);
             Route::get('prodi-dosen/{id}',          [ProdiDosenController::class, 'show']);
         });
 
