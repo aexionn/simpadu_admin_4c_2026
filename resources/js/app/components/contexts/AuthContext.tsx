@@ -15,7 +15,7 @@ export interface User {
   name: string;
   email: string;
   is_active: string; // "Y" | "T"
-  roles?: Array<{ id_role: number; role_name: string }>;
+  roles?: string[];
 }
 
 interface AuthState {
@@ -60,6 +60,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await readJson<ApiObject>(res);
           const user: User | null = data ? data.data ?? data : null;
           if (!user) {
+            clearTokens();
+            setState({ user: null, isLoading: false, isAuthenticated: false });
+            return;
+          }
+          const roles: string[] = (user.roles as any) ?? [];
+          if (!roles.includes('super_admin')) {
             clearTokens();
             setState({ user: null, isLoading: false, isAuthenticated: false });
             return;
@@ -123,6 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) {
       clearTokens();
       throw new Error('Login berhasil, tetapi respons profil kosong.');
+    }
+
+    // Pastikan user memiliki role super_admin
+    const roles: string[] = (user.roles as any) ?? [];
+    if (!roles.includes('super_admin')) {
+      clearTokens();
+      throw new Error('Akses ditolak. Hanya akun super_admin yang diizinkan.');
     }
 
     setState({ user, isLoading: false, isAuthenticated: true });
